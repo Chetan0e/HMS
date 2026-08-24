@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Outer Hexagonal Map Pin Logo Container -->
+  <path 
+    d="M 236 68 
+       C 248 58, 264 58, 276 68 
+       L 396 138 
+       C 410 146, 416 160, 416 176 
+       L 416 286 
+       C 416 304, 406 320, 392 332 
+       L 274 436 
+       C 264 444, 248 444, 238 436 
+       L 120 332 
+       C 106 320, 96 304, 96 286 
+       L 96 176 
+       C 96 160, 102 146, 116 138 Z" 
+    fill="#0062FF" 
+  />
+
+  <!-- White Bed Icon -->
+  <!-- Left Bed Post -->
+  <rect x="174" y="196" width="22" height="120" rx="4" fill="#FFFFFF" />
+  
+  <!-- Right Bed Post -->
+  <rect x="316" y="196" width="22" height="120" rx="4" fill="#FFFFFF" />
+  
+  <!-- Horizontal Mattress Frame -->
+  <rect x="174" y="258" width="164" height="22" rx="3" fill="#FFFFFF" />
+  
+  <!-- Pillow / Headrest -->
+  <rect x="206" y="220" width="100" height="38" rx="14" fill="#FFFFFF" />
+</svg>
