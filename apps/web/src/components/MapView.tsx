@@ -34,6 +34,23 @@ const createCustomPin = (price: number, isSelected: boolean) => {
   });
 };
 
+// Component to handle map sizing recalculation on load/resize
+const MapResizer: React.FC = () => {
+  const map = useMap();
+
+  useEffect(() => {
+    // Immediate and delayed invalidateSize to handle layout paint delays
+    map.invalidateSize();
+    const timer = setTimeout(() => {
+      map.invalidateSize();
+    }, 250);
+
+    return () => clearTimeout(timer);
+  }, [map]);
+
+  return null;
+};
+
 interface MapViewProps {
   properties: Property[];
   center?: [number, number];
@@ -54,7 +71,7 @@ const AutoFitBounds: React.FC<{ properties: Property[] }> = ({ properties }) => 
 
       if (validPoints.length > 0) {
         const bounds = L.latLngBounds(validPoints);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       }
     }
   }, [properties, map]);
@@ -69,14 +86,26 @@ export const MapView: React.FC<MapViewProps> = ({
   selectedPropertyId,
   onSelectProperty
 }) => {
+  const defaultCenter = properties.length > 0 && properties[0].latitude && properties[0].longitude
+    ? [properties[0].latitude, properties[0].longitude] as [number, number]
+    : center;
+
   return (
     <div className="w-full h-full min-h-[450px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 relative z-0">
-      <MapContainer center={center} zoom={zoom} scrollWheelZoom={true} className="w-full h-full">
+      <MapContainer
+        center={defaultCenter}
+        zoom={zoom}
+        scrollWheelZoom={true}
+        className="w-full h-full min-h-[450px] z-0"
+        style={{ height: '100%', width: '100%' }}
+      >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'
+          url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+          maxZoom={19}
         />
 
+        <MapResizer />
         <AutoFitBounds properties={properties} />
 
         {properties.map((prop) => {
@@ -135,3 +164,4 @@ export const MapView: React.FC<MapViewProps> = ({
     </div>
   );
 };
+

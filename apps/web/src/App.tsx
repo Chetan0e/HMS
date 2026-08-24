@@ -13,6 +13,13 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { SeekerDashboardPage } from './pages/SeekerDashboardPage';
 import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
+import { OwnerPropertiesPage } from './pages/OwnerPropertiesPage';
+import { OwnerRoomsPage } from './pages/OwnerRoomsPage';
+import { OwnerResidentsPage } from './pages/OwnerResidentsPage';
+import { OwnerPaymentsPage } from './pages/OwnerPaymentsPage';
+import { OwnerMaintenancePage } from './pages/OwnerMaintenancePage';
+import { OwnerAnalyticsPage } from './pages/OwnerAnalyticsPage';
+import { OwnerSettingsPage } from './pages/OwnerSettingsPage';
 import { AddPropertyPage } from './pages/AddPropertyPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
 
@@ -44,8 +51,14 @@ export const App: React.FC = () => {
 
           {/* Owner Dashboard Routes */}
           <Route path="/owner" element={<OwnerDashboardPage />} />
-          <Route path="/owner/properties" element={<OwnerDashboardPage />} />
+          <Route path="/owner/properties" element={<OwnerPropertiesPage />} />
           <Route path="/owner/properties/new" element={<AddPropertyPage />} />
+          <Route path="/owner/rooms" element={<OwnerRoomsPage />} />
+          <Route path="/owner/residents" element={<OwnerResidentsPage />} />
+          <Route path="/owner/payments" element={<OwnerPaymentsPage />} />
+          <Route path="/owner/maintenance" element={<OwnerMaintenancePage />} />
+          <Route path="/owner/analytics" element={<OwnerAnalyticsPage />} />
+          <Route path="/owner/settings" element={<OwnerSettingsPage />} />
           <Route path="/owner/*" element={<OwnerDashboardPage />} />
 
           {/* Admin Routes */}

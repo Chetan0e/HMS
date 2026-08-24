@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, Users, CreditCard, Wrench, BarChart3, Settings, HelpCircle, LogOut, PlusCircle, X } from 'lucide-react';
+import { LayoutDashboard, Building2, BedDouble, Users, CreditCard, Wrench, BarChart3, Settings, HelpCircle, LogOut, PlusCircle, X } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 
 import { Logo } from './Logo';
@@ -16,11 +16,13 @@ export const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ onCloseMobile }) => 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/owner' },
     { label: 'Properties', icon: Building2, path: '/owner/properties' },
+    { label: 'Rooms & Beds', icon: BedDouble, path: '/owner/rooms' },
     { label: 'Residents', icon: Users, path: '/owner/residents' },
     { label: 'Payments', icon: CreditCard, path: '/owner/payments' },
     { label: 'Maintenance', icon: Wrench, path: '/owner/maintenance' },
     { label: 'Analytics', icon: BarChart3, path: '/owner/analytics' },
   ];
+
 
   return (
     <aside className="w-64 bg-navy-900 text-slate-300 h-full min-h-screen flex flex-col justify-between p-4 sticky top-0 overflow-y-auto">
