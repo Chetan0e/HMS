@@ -28,58 +28,8 @@ export const OwnerMaintenancePage: React.FC = () => {
     fetchTickets();
   }, []);
 
-  const demoTickets = [
-    {
-      id: 'maint-1',
-      title: 'Water Leakage in Kitchen Sink',
-      category: 'Plumbing',
-      property_name: 'Shree Mahalaxmi Executive PG',
-      room_number: '101',
-      seeker_name: 'Anita Smith',
-      priority: 'HIGH',
-      status: 'REPORTED',
-      description: 'The kitchen sink pipe is leaking water continuously onto the cabinet floor.',
-      created_at: '2 hours ago'
-    },
-    {
-      id: 'maint-2',
-      title: 'AC Cooling Not Working',
-      category: 'HVAC / AC',
-      property_name: 'Powai Lake View Co-Living',
-      room_number: '302',
-      seeker_name: 'Karan Patel',
-      priority: 'HIGH',
-      status: 'IN_PROGRESS',
-      description: 'The split AC unit is blowing warm air even when set to 18°C. Servicing technician scheduled.',
-      created_at: 'Today, 09:00 AM'
-    },
-    {
-      id: 'maint-3',
-      title: 'Study Lamp Outlet Not Working',
-      category: 'Electrical',
-      property_name: 'The Grand Oak Scholar Residence',
-      room_number: '204',
-      seeker_name: 'Vikram Mehta',
-      priority: 'MEDIUM',
-      status: 'REPORTED',
-      description: 'Power socket next to the study desk trips the breaker when plugged in.',
-      created_at: 'Yesterday'
-    },
-    {
-      id: 'maint-4',
-      title: 'WiFi Router Password Reset Requested',
-      category: 'Internet',
-      property_name: 'Rankala View Girls Residency',
-      room_number: '102',
-      seeker_name: 'Priya Sharma',
-      priority: 'LOW',
-      status: 'RESOLVED',
-      description: 'Requested WiFi login details for second floor router. Resolved.',
-      created_at: '3 days ago'
-    }
-  ];
+  const activeTickets = tickets;
 
-  const activeTickets = tickets.length > 0 ? tickets : demoTickets;
 
   const filteredTickets = activeTickets.filter(t => {
     const matchesSearch = (t.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||

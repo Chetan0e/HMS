@@ -32,54 +32,8 @@ export const OwnerPaymentsPage: React.FC = () => {
     fetchPayments();
   }, []);
 
-  const demoPayments = [
-    {
-      id: 'pay-101',
-      resident_name: 'Anita Smith',
-      property_name: 'Shree Mahalaxmi Executive PG',
-      amount: 8500,
-      due_date: '2026-08-05',
-      paid_at: '2026-08-04 10:30 AM',
-      method: 'UPI',
-      status: 'PAID',
-      transaction_reference: 'TXN-984920412'
-    },
-    {
-      id: 'pay-102',
-      resident_name: 'Priya Sharma',
-      property_name: 'Rankala View Girls Residency',
-      amount: 7000,
-      due_date: '2026-08-05',
-      paid_at: '2026-08-03 04:15 PM',
-      method: 'Bank Transfer',
-      status: 'PAID',
-      transaction_reference: 'TXN-773819201'
-    },
-    {
-      id: 'pay-103',
-      resident_name: 'Vikram Mehta',
-      property_name: 'The Grand Oak Scholar Residence',
-      amount: 14000,
-      due_date: '2026-08-10',
-      paid_at: '-',
-      method: 'UPI',
-      status: 'PENDING',
-      transaction_reference: '-'
-    },
-    {
-      id: 'pay-104',
-      resident_name: 'Karan Patel',
-      property_name: 'Powai Lake View Co-Living',
-      amount: 16000,
-      due_date: '2026-08-01',
-      paid_at: '-',
-      method: 'Cash',
-      status: 'OVERDUE',
-      transaction_reference: '-'
-    }
-  ];
+  const activePayments = payments;
 
-  const activePayments = payments.length > 0 ? payments : demoPayments;
 
   const filteredPayments = activePayments.filter(p =>
     (p.resident_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||

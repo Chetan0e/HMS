@@ -10,11 +10,12 @@ router = APIRouter(prefix="", tags=["Residents & Payments"])
 
 # --- Residents ---
 @router.get("/residents")
-async def get_residents(current_user: dict = Depends(require_roles(["OWNER", "MANAGER", "ADMIN"]))):
+async def get_residents(current_user: dict = Depends(get_current_user)):
     db = get_database()
     query = {}
-    if current_user["role"] in ["OWNER", "MANAGER"]:
+    if current_user["role"] in ["OWNER", "MANAGER", "SEEKER"]:
         query = {"owner_id": current_user["id"]}
+
         
     cursor = db.residents.find(query)
     residents = []

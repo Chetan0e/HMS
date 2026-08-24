@@ -29,8 +29,15 @@ export const RegisterPage: React.FC = () => {
     try {
       const data = await apiFetch('/auth/register', {
         method: 'POST',
-        body: JSON.stringify({ name, email, phone, password, role })
+        body: JSON.stringify({
+          name: name.trim(),
+          email: email.trim(),
+          phone: phone.trim(),
+          password: password.trim(),
+          role
+        })
       });
+
       setAuth(data.user, data.access_token, data.refresh_token);
       if (role === 'OWNER' || role === 'MANAGER') {
         navigate('/owner');

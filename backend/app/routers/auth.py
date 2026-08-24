@@ -12,25 +12,27 @@ router = APIRouter(prefix="/auth", tags=["Auth"])
 @router.post("/register", response_model=TokenResponse)
 async def register(user_data: UserRegister):
     db = get_database()
+    clean_email = user_data.email.strip().lower()
+    clean_phone = user_data.phone.strip()
     
     # Check existing user
-    existing_email = await db.users.find_one({"email": user_data.email.lower()})
+    existing_email = await db.users.find_one({"email": clean_email})
     if existing_email:
         raise HTTPException(status_code=400, detail="Email already registered")
         
-    existing_phone = await db.users.find_one({"phone": user_data.phone})
+    existing_phone = await db.users.find_one({"phone": clean_phone})
     if existing_phone:
         raise HTTPException(status_code=400, detail="Phone number already registered")
         
     user_doc = {
-        "name": user_data.name,
-        "email": user_data.email.lower(),
-        "phone": user_data.phone,
-        "password_hash": get_password_hash(user_data.password),
+        "name": user_data.name.strip(),
+        "email": clean_email,
+        "phone": clean_phone,
+        "password_hash": get_password_hash(user_data.password.strip()),
         "role": user_data.role,
         "profile_image": None,
         "account_status": "ACTIVE",
-        "verification_status": "UNVERIFIED",
+        "verification_status": "VERIFIED",
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
         "last_login": datetime.utcnow()
@@ -64,9 +66,18 @@ async def register(user_data: UserRegister):
 @router.post("/login", response_model=TokenResponse)
 async def login(credentials: UserLogin):
     db = get_database()
-    user = await db.users.find_one({"email": credentials.email.lower()})
-    if not user or not verify_password(credentials.password, user["password_hash"]):
+    clean_email = credentials.email.strip().lower()
+    clean_password = credentials.password.strip()
+    
+    import re
+    user = await db.users.find_one({"email": clean_email})
+    if not user:
+        # Fallback case-insensitive regex search
+        user = await db.users.find_one({"email": {"$regex": f"^{re.escape(clean_email)}$", "$options": "i"}})
+        
+    if not user or not verify_password(clean_password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
         
     if user.get("account_status") == "SUSPENDED":
         raise HTTPException(status_code=403, detail="Account is suspended. Contact support.")

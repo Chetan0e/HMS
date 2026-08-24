@@ -17,7 +17,12 @@ export const MapPage: React.FC = () => {
       try {
         setIsLoading(true);
         const res = await apiFetch<{ items: Property[] }>('/search?page_size=50');
-        setProperties(res.items || []);
+        let items = res.items || [];
+        if (items.length === 0) {
+          const myProps = await apiFetch<Property[]>('/properties/my-properties');
+          items = myProps || [];
+        }
+        setProperties(items);
       } catch (e) {
         console.error(e);
       } finally {
@@ -36,7 +41,7 @@ export const MapPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 w-full overflow-hidden">
       <Navbar />
 
       {/* Mobile Map/List Toggle Bar */}
@@ -61,15 +66,16 @@ export const MapPage: React.FC = () => {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col md:flex-row h-[calc(100vh-64px)] overflow-hidden">
-        {/* Map View */}
-        <div className={`flex-1 h-full p-2 sm:p-4 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
+      <main className="flex-1 flex flex-col md:flex-row h-[calc(100vh-64px)] w-full overflow-hidden">
+        {/* Map View - Expanded to full window canvas */}
+        <div className={`flex-1 h-full w-full p-1 sm:p-2 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
           <MapView
             properties={properties}
             selectedPropertyId={selectedPropertyId}
             onSelectProperty={handleSelectProperty}
           />
         </div>
+
 
         {/* Sidebar Cards */}
         <div className={`w-full md:w-96 bg-white border-l border-slate-200 p-4 overflow-y-auto space-y-4 ${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>

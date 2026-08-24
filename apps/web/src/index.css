@@ -22,12 +22,19 @@
   @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
 }
 
-/* Leaflet Overrides */
+/* Leaflet Overrides for full window responsiveness */
 .leaflet-container {
   width: 100% !important;
   height: 100% !important;
-  min-height: 450px;
-  border-radius: 0.75rem;
+  min-height: 100% !important;
+  border-radius: 1rem;
   z-index: 1;
+  background-color: #f8fafc !important;
 }
+
+.leaflet-tile-container img {
+  max-width: none !important;
+  max-height: none !important;
+}
+
 

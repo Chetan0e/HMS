@@ -39,13 +39,37 @@ const MapResizer: React.FC = () => {
   const map = useMap();
 
   useEffect(() => {
-    // Immediate and delayed invalidateSize to handle layout paint delays
-    map.invalidateSize();
-    const timer = setTimeout(() => {
+    const triggerInvalidate = () => {
       map.invalidateSize();
-    }, 250);
+    };
 
-    return () => clearTimeout(timer);
+    triggerInvalidate();
+    const t1 = setTimeout(triggerInvalidate, 100);
+    const t2 = setTimeout(triggerInvalidate, 300);
+    const t3 = setTimeout(triggerInvalidate, 600);
+    const t4 = setTimeout(triggerInvalidate, 1000);
+
+    window.addEventListener('resize', triggerInvalidate);
+
+    let observer: ResizeObserver | null = null;
+    const container = map.getContainer();
+    if (container && typeof ResizeObserver !== 'undefined') {
+      observer = new ResizeObserver(() => {
+        triggerInvalidate();
+      });
+      observer.observe(container);
+    }
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      window.removeEventListener('resize', triggerInvalidate);
+      if (observer && container) {
+        observer.unobserve(container);
+      }
+    };
   }, [map]);
 
   return null;
@@ -71,13 +95,16 @@ const AutoFitBounds: React.FC<{ properties: Property[] }> = ({ properties }) => 
 
       if (validPoints.length > 0) {
         const bounds = L.latLngBounds(validPoints);
-        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
       }
+    } else {
+      map.invalidateSize();
     }
   }, [properties, map]);
 
   return null;
 };
+
 
 export const MapView: React.FC<MapViewProps> = ({
   properties,

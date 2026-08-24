@@ -86,10 +86,17 @@ export const PropertyDetailsPage: React.FC = () => {
       navigate('/login');
       return;
     }
-    if (!property || !selectedRoom || !moveInDate) {
-      alert('Please select a room and move-in date');
+    if (!property || !selectedRoom) {
+      alert('Please select a valid room and property');
       return;
     }
+    const today = new Date().toISOString().split('T')[0];
+    const targetDate = moveInDate || today;
+    if (targetDate < today) {
+      alert('Move-in date cannot be in the past');
+      return;
+    }
+
 
     try {
       setIsSubmittingBooking(true);
@@ -98,11 +105,12 @@ export const PropertyDetailsPage: React.FC = () => {
         body: JSON.stringify({
           property_id: property.id,
           room_id: selectedRoom.id,
-          move_in_date: moveInDate,
+          move_in_date: targetDate,
           stay_duration: stayDuration,
           notes: bookingNotes
         })
       });
+
       setBookingSuccess(true);
     } catch (err: any) {
       alert(err.message || 'Failed to submit booking request');
@@ -342,11 +350,21 @@ export const PropertyDetailsPage: React.FC = () => {
                     <input
                       type="date"
                       required
-                      value={moveInDate}
-                      onChange={(e) => setMoveInDate(e.target.value)}
+                      min={new Date().toISOString().split('T')[0]}
+                      value={moveInDate || new Date().toISOString().split('T')[0]}
+                      onChange={(e) => {
+                        const today = new Date().toISOString().split('T')[0];
+                        if (e.target.value < today) {
+                          alert('Move-in date cannot be in the past');
+                          setMoveInDate(today);
+                          return;
+                        }
+                        setMoveInDate(e.target.value);
+                      }}
                       className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-semibold text-slate-900 cursor-pointer"
                     />
                   </div>
+
 
                   <div>
                     <label className="text-xs font-bold text-slate-700 block mb-1.5">Minimum Stay Duration</label>

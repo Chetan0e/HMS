@@ -23,12 +23,17 @@ async def create_booking(booking_in: BookingCreate, current_user: dict = Depends
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
         
+    today_str = datetime.utcnow().strftime("%Y-%m-%d")
+    if booking_in.move_in_date < today_str:
+        raise HTTPException(status_code=400, detail="Move-in date cannot be in the past")
+
     # Check if user already has an active pending or approved booking for this property
     existing_active = await db.bookings.find_one({
         "seeker_id": current_user["id"],
         "property_id": booking_in.property_id,
         "status": {"$in": [BookingStatus.PENDING, BookingStatus.APPROVED]}
     })
+
     if existing_active:
         raise HTTPException(status_code=400, detail="You already have an active booking request for this property")
         

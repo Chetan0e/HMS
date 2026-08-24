@@ -17,8 +17,9 @@ export const LoginPage: React.FC = () => {
 
   const handleLogin = async (e?: React.FormEvent, customEmail?: string, customPassword?: string) => {
     if (e) e.preventDefault();
-    const loginEmail = customEmail || email;
-    const loginPass = customPassword || password;
+    const loginEmail = (customEmail || email).trim();
+    const loginPass = (customPassword || password).trim();
+
     
     if (!loginEmail || !loginPass) return;
 

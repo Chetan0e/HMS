@@ -33,63 +33,7 @@ export const OwnerResidentsPage: React.FC = () => {
     fetchResidents();
   }, []);
 
-  // Demo Fallback Data if DB residents collection is empty
-  const demoResidents = [
-    {
-      id: 'res-1',
-      name: 'Anita Smith',
-      email: 'anita.smith@gmail.com',
-      phone: '+91 98999 11122',
-      property_name: 'Shree Mahalaxmi Executive PG',
-      room_number: '102',
-      bed_number: 'Bed A',
-      move_in_date: '2026-06-15',
-      rent: 8500,
-      payment_status: 'PAID',
-      status: 'ACTIVE'
-    },
-    {
-      id: 'res-2',
-      name: 'Vikram Mehta',
-      email: 'vikram.mehta@techcorp.com',
-      phone: '+91 98220 33445',
-      property_name: 'The Grand Oak Scholar Residence',
-      room_number: '204',
-      bed_number: 'Bed B',
-      move_in_date: '2026-07-01',
-      rent: 14000,
-      payment_status: 'PENDING',
-      status: 'ACTIVE'
-    },
-    {
-      id: 'res-3',
-      name: 'Priya Sharma',
-      email: 'priya.sharma@du.ac.in',
-      phone: '+91 97112 55667',
-      property_name: 'Rankala View Girls Residency',
-      room_number: '101',
-      bed_number: 'Bed A',
-      move_in_date: '2026-05-10',
-      rent: 7000,
-      payment_status: 'PAID',
-      status: 'ACTIVE'
-    },
-    {
-      id: 'res-4',
-      name: 'Karan Patel',
-      email: 'karan.patel@gmail.com',
-      phone: '+91 99001 77889',
-      property_name: 'Powai Lake View Co-Living',
-      room_number: '302',
-      bed_number: 'Bed A',
-      move_in_date: '2026-08-01',
-      rent: 16000,
-      payment_status: 'OVERDUE',
-      status: 'NOTICE_PERIOD'
-    }
-  ];
-
-  const activeResidentList = residents.length > 0 ? residents : demoResidents;
+  const activeResidentList = residents;
 
   const filteredResidents = activeResidentList.filter(r => {
     const matchesSearch = r.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -98,6 +42,7 @@ export const OwnerResidentsPage: React.FC = () => {
     const matchesStatus = statusFilter === 'ALL' || r.payment_status === statusFilter;
     return matchesSearch && matchesStatus;
   });
+
 
   const handleAddResident = (e: React.FormEvent) => {
     e.preventDefault();

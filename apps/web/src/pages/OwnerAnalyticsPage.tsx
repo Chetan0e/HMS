@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { OwnerSidebar } from '../components/ui/OwnerSidebar';
 import { apiFetch } from '../lib/api';
-import { BarChart, Bar, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
-import { BarChart3, TrendingUp, DollarSign, BedDouble, Building2, Menu, Download } from 'lucide-react';
+import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { BarChart3, TrendingUp, Building2, Menu, Download } from 'lucide-react';
 
 export const OwnerAnalyticsPage: React.FC = () => {
   const [stats, setStats] = useState<any>(null);
@@ -25,21 +25,15 @@ export const OwnerAnalyticsPage: React.FC = () => {
   }, []);
 
   const occupancyTrend = stats?.occupancy_trend || [
-    { month: 'Jan', occupancy: 65, revenue: 180000 },
-    { month: 'Feb', occupancy: 70, revenue: 195000 },
-    { month: 'Mar', occupancy: 78, revenue: 210000 },
-    { month: 'Apr', occupancy: 82, revenue: 225000 },
-    { month: 'May', occupancy: 88, revenue: 240000 },
-    { month: 'Jun', occupancy: 92, revenue: 265000 }
+    { month: 'Jan', occupancy: 0 },
+    { month: 'Feb', occupancy: 0 },
+    { month: 'Mar', occupancy: 0 },
+    { month: 'Apr', occupancy: 0 },
+    { month: 'May', occupancy: 0 },
+    { month: 'Jun', occupancy: 0 }
   ];
 
-  const propertyComparisonData = [
-    { name: 'Shree Mahalaxmi', occupancy: 94, beds: 24 },
-    { name: 'Grand Oak', occupancy: 88, beds: 36 },
-    { name: 'Rankala Girls', occupancy: 96, beds: 18 },
-    { name: 'Powai Colive', occupancy: 85, beds: 20 },
-    { name: 'Kothrud Palms', occupancy: 90, beds: 28 }
-  ];
+  const propertyComparisonData = stats?.property_comparison || [];
 
   return (
     <div className="min-h-screen flex bg-slate-100 relative">
@@ -77,7 +71,7 @@ export const OwnerAnalyticsPage: React.FC = () => {
           <div>
             <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Analytics & Business Intelligence</h1>
             <p className="text-xs text-slate-500 font-semibold mt-0.5">
-              Comprehensive financial metrics, occupancy trends, and stay performance reports.
+              Real financial metrics, occupancy trends, and stay performance reports.
             </p>
           </div>
 
@@ -94,10 +88,12 @@ export const OwnerAnalyticsPage: React.FC = () => {
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Average Occupancy</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-slate-900">{stats ? stats.occupancy_rate : 89.4}%</span>
-              <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                <TrendingUp className="w-3.5 h-3.5" /> +4.2%
-              </span>
+              <span className="text-2xl font-black text-slate-900">{stats ? stats.occupancy_rate : 0}%</span>
+              {stats && stats.occupancy_rate > 0 && (
+                <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
+                  <TrendingUp className="w-3.5 h-3.5" /> Live
+                </span>
+              )}
             </div>
           </div>
 
@@ -105,10 +101,7 @@ export const OwnerAnalyticsPage: React.FC = () => {
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Monthly Revenue</span>
             <div className="flex items-baseline gap-2">
               <span className="text-2xl font-black text-slate-900">
-                ₹{stats ? stats.total_revenue.toLocaleString() : '2,65,000'}
-              </span>
-              <span className="text-xs font-bold text-emerald-600 flex items-center gap-0.5">
-                <TrendingUp className="w-3.5 h-3.5" /> +8.1%
+                ₹{stats ? stats.total_revenue.toLocaleString() : 0}
               </span>
             </div>
           </div>
@@ -116,15 +109,15 @@ export const OwnerAnalyticsPage: React.FC = () => {
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Beds Occupied</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-slate-900">{stats ? stats.occupied_beds : 112}</span>
-              <span className="text-xs text-slate-400 font-semibold">/ {stats ? stats.total_beds : 126} total</span>
+              <span className="text-2xl font-black text-slate-900">{stats ? stats.occupied_beds : 0}</span>
+              <span className="text-xs text-slate-400 font-semibold">/ {stats ? stats.total_beds : 0} total</span>
             </div>
           </div>
 
           <div className="bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
             <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">Active Properties</span>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-black text-slate-900">{stats ? stats.total_properties : 5}</span>
+              <span className="text-2xl font-black text-slate-900">{stats ? stats.total_properties : 0}</span>
               <span className="text-xs text-slate-400 font-semibold">Stays Managed</span>
             </div>
           </div>
@@ -156,15 +149,23 @@ export const OwnerAnalyticsPage: React.FC = () => {
               <Building2 className="w-4 h-4 text-brand-600" /> Occupancy Rate by Property
             </h3>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={propertyComparisonData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
-                  <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                  <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} width={110} />
-                  <Tooltip />
-                  <Bar dataKey="occupancy" name="Occupancy %" fill="#10b981" radius={[0, 6, 6, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
+              {propertyComparisonData.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={propertyComparisonData} layout="vertical">
+                    <CartesianGrid strokeDasharray="3 3" horizontal={false} stroke="#f1f5f9" />
+                    <XAxis type="number" domain={[0, 100]} axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                    <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fontSize: 11, fill: '#64748b' }} width={110} />
+                    <Tooltip />
+                    <Bar dataKey="occupancy" name="Occupancy %" fill="#10b981" radius={[0, 6, 6, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex flex-col items-center justify-center text-center p-4 text-slate-400">
+                  <Building2 className="w-8 h-8 mb-2 stroke-1" />
+                  <p className="text-xs font-semibold">No property comparison data available.</p>
+                  <p className="text-[11px] text-slate-400 mt-1">List your properties to view performance metrics.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
