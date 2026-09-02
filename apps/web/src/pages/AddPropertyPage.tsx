@@ -9,6 +9,8 @@ import {
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import { getUserLocation } from '../lib/location';
+
 
 // Leaflet Marker Icon Setup
 const customPinIcon = L.divIcon({
@@ -199,21 +201,16 @@ export const AddPropertyPage: React.FC = () => {
   };
 
   // Geolocation Handler
-  const handleUseCurrentLocation = () => {
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLatitude(Number(pos.coords.latitude.toFixed(6)));
-          setLongitude(Number(pos.coords.longitude.toFixed(6)));
-        },
-        (err) => {
-          alert('Could not fetch current GPS location: ' + err.message);
-        }
-      );
-    } else {
-      alert('Geolocation is not supported by your browser.');
+  const handleUseCurrentLocation = async () => {
+    try {
+      const loc = await getUserLocation();
+      setLatitude(loc.latitude);
+      setLongitude(loc.longitude);
+    } catch (err: any) {
+      alert('Could not fetch location: ' + (err?.message || 'Defaulting to city center'));
     }
   };
+
 
   const handleSubmit = async () => {
     if (!name.trim()) {

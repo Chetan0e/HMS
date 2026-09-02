@@ -4,6 +4,8 @@ import { Footer } from '../components/ui/Footer';
 import { useNavigate, Link } from 'react-router-dom';
 import { Search, MapPin, LocateFixed, Loader2, Calendar, Building2, ShieldCheck, Zap, Users, ArrowRight, Sparkles, CheckCircle2 } from 'lucide-react';
 
+import { getUserLocation, reverseGeocodeCity } from '../lib/location';
+
 export const LandingPage: React.FC = () => {
   const navigate = useNavigate();
   const [location, setLocation] = useState('');
@@ -11,34 +13,21 @@ export const LandingPage: React.FC = () => {
   const [moveInDate, setMoveInDate] = useState('');
   const [isLocating, setIsLocating] = useState(false);
 
-  const handleGetLiveLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
+  const handleGetLiveLocation = async () => {
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const data = await res.json();
-          const city = data.address?.city || data.address?.town || data.address?.suburb || data.address?.county || data.address?.state || "Current Location";
-          setLocation(city);
-        } catch {
-          setLocation("Current Location");
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (error) => {
-        console.error("Location error:", error);
-        setIsLocating(false);
-        setLocation("Kolhapur");
-      },
-      { timeout: 8000 }
-    );
+    try {
+      const loc = await getUserLocation();
+      const resolvedCity = loc.city || await reverseGeocodeCity(loc.latitude, loc.longitude);
+      const displayCity = (resolvedCity && resolvedCity !== 'Current Location') ? resolvedCity : 'Kolhapur';
+      setLocation(displayCity);
+    } catch (err) {
+      console.error("Location error:", err);
+      setLocation("Kolhapur");
+    } finally {
+      setIsLocating(false);
+    }
   };
+
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();

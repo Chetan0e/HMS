@@ -6,6 +6,7 @@ import { Property } from '../types';
 import { apiFetch } from '../lib/api';
 import { useSearchParams } from 'react-router-dom';
 import { Search, SlidersHorizontal, MapPin, LocateFixed, Loader2, X, Filter } from 'lucide-react';
+import { getUserLocation, reverseGeocodeCity } from '../lib/location';
 
 export const ExplorePage: React.FC = () => {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -24,40 +25,27 @@ export const ExplorePage: React.FC = () => {
   const [sort, setSort] = useState('recommended');
   const [selectedAmenities, setSelectedAmenities] = useState<string[]>([]);
 
-  const handleGetLiveLocation = () => {
-    if (!navigator.geolocation) {
-      alert("Geolocation is not supported by your browser");
-      return;
-    }
+  const handleGetLiveLocation = async () => {
+
     setIsLocating(true);
-    navigator.geolocation.getCurrentPosition(
-      async (position) => {
-        const { latitude, longitude } = position.coords;
-        try {
-          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
-          const data = await res.json();
-          const city = data.address?.city || data.address?.town || data.address?.suburb || data.address?.county || data.address?.state || "Current Location";
-          setQuery(city);
-          const params = new URLSearchParams(searchParams);
-          params.set('q', city);
-          setSearchParams(params);
-        } catch {
-          setQuery("Current Location");
-        } finally {
-          setIsLocating(false);
-        }
-      },
-      (error) => {
-        console.error("Location error:", error);
-        setIsLocating(false);
-        setQuery("Kolhapur");
-        const params = new URLSearchParams(searchParams);
-        params.set('q', "Kolhapur");
-        setSearchParams(params);
-      },
-      { timeout: 8000 }
-    );
+    try {
+      const loc = await getUserLocation();
+      const resolvedCity = loc.city || await reverseGeocodeCity(loc.latitude, loc.longitude);
+      const displayCity = (resolvedCity && resolvedCity !== 'Current Location') ? resolvedCity : 'Kolhapur';
+      setQuery(displayCity);
+      const params = new URLSearchParams(searchParams);
+      params.set('q', displayCity);
+      params.set('lat', loc.latitude.toString());
+      params.set('lng', loc.longitude.toString());
+      setSearchParams(params);
+    } catch (err) {
+      console.error("Location error:", err);
+      setQuery("Kolhapur");
+    } finally {
+      setIsLocating(false);
+    }
   };
+
 
   const amenitiesOptions = ['WiFi', 'Food Included', 'AC', 'Laundry', 'Gym', 'Parking', 'Daily Cleaning'];
 

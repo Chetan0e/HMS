@@ -4,7 +4,27 @@ from app.core.database import get_database
 from app.schemas.schemas import PropertyResponse
 from app.utils.helpers import clean_doc
 
+import httpx
+
 router = APIRouter(prefix="/search", tags=["Search & Discovery"])
+
+@router.get("/reverse-geocode")
+async def reverse_geocode(lat: float, lng: float):
+    try:
+        async with httpx.AsyncClient(timeout=4.0) as client:
+            headers = {"User-Agent": "HMS-HostelStayPlatform/1.0 (contact@hms.com)"}
+            resp = await client.get(
+                f"https://nominatim.openstreetmap.org/reverse?format=json&lat={lat}&lon={lng}",
+                headers=headers
+            )
+            if resp.status_code == 200:
+                data = resp.json()
+                addr = data.get("address", {})
+                city = addr.get("city") or addr.get("town") or addr.get("suburb") or addr.get("county") or addr.get("state") or "Current Location"
+                return {"city": city, "address": data.get("display_name", "")}
+    except Exception:
+        pass
+    return {"city": "Current Location", "address": ""}
 
 @router.get("", response_model=dict)
 async def search_properties(
@@ -18,7 +38,7 @@ async def search_properties(
     amenities: Optional[str] = None, # comma-separated
     lat: Optional[float] = None,
     lng: Optional[float] = None,
-    radius_km: Optional[float] = None, # e.g. 1, 3, 5, 10
+    radius_km: Optional[float] = None, # e.g. 1, 3, 5, 10, 50
     sort: Optional[str] = "recommended", # recommended, price_asc, price_desc, rating, newest
     page: int = Query(1, ge=1),
     page_size: int = Query(12, ge=1, le=50)
@@ -32,14 +52,15 @@ async def search_properties(
     # Text query across name, city, address, nearby_places
     if q and q.strip():
         search_term = q.strip()
-        query["$or"] = [
-            {"name": {"$regex": search_term, "$options": "i"}},
-            {"city": {"$regex": search_term, "$options": "i"}},
-            {"address": {"$regex": search_term, "$options": "i"}},
-            {"nearby_places": {"$regex": search_term, "$options": "i"}}
-        ]
+        if search_term.lower() not in ["current location", "near me", "my location", "live location"]:
+            query["$or"] = [
+                {"name": {"$regex": search_term, "$options": "i"}},
+                {"city": {"$regex": search_term, "$options": "i"}},
+                {"address": {"$regex": search_term, "$options": "i"}},
+                {"nearby_places": {"$regex": search_term, "$options": "i"}}
+            ]
         
-    if city and city.strip():
+    if city and city.strip() and city.strip().lower() not in ["current location", "near me", "all"]:
         query["city"] = {"$regex": city.strip(), "$options": "i"}
         
     if gender_policy and gender_policy != "All":
@@ -53,13 +74,14 @@ async def search_properties(
         if amenity_list:
             query["amenities"] = {"$all": amenity_list}
             
-    # Geospatial query ($geoWithin centerSphere works in count_documents and supports custom sorting)
-    if lat is not None and lng is not None and radius_km:
+    # Geospatial query
+    if lat is not None and lng is not None:
+        eff_radius = float(radius_km) if (radius_km and radius_km > 0) else 100.0
         query["location"] = {
             "$geoWithin": {
                 "$centerSphere": [
                     [float(lng), float(lat)],
-                    float(radius_km) / 6378.1
+                    eff_radius / 6378.1
                 ]
             }
         }
@@ -97,6 +119,17 @@ async def search_properties(
             
         all_matched.append(prop)
 
+    # Fallback if geospatial query yielded 0 results
+    if len(all_matched) == 0 and "location" in query:
+        del query["location"]
+        cursor = db.properties.find(query).sort(sort_spec)
+        async for prop in cursor:
+            prop = clean_doc(prop)
+            rooms = await db.rooms.find({"property_id": prop["id"]}).to_list(50)
+            prices = [r.get("price", 0) for r in rooms if "price" in r and r.get("price") is not None]
+            prop["pricing_starting_from"] = min(prices) if prices else prop.get("deposit", 0.0)
+            all_matched.append(prop)
+
     total = len(all_matched)
     skip = (page_val - 1) * page_size_val
     items = all_matched[skip:skip + page_size_val]
@@ -108,6 +141,7 @@ async def search_properties(
         "page_size": page_size_val,
         "total_pages": (total + page_size_val - 1) // page_size_val if total > 0 else 1
     }
+
 
 @router.get("/recommendations", response_model=List[dict])
 async def get_recommendations(
