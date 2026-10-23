@@ -8,7 +8,7 @@
     "dev": "concurrently \"npm run dev --workspace=web\" \"python backend/main.py\"",
     "dev:frontend": "npm run dev --workspace=web",
     "dev:backend": "python backend/main.py",
-    "build": "npm run build --workspace=web && node -e \"const fs = require('fs'); fs.cpSync('apps/web/dist', 'dist', {recursive: true});\"",
+    "build": "npm run build --workspace=web",
     "typecheck": "npm run typecheck --workspace=web",
     "lint": "npm run lint --workspace=web",
     "test": "npm run test --workspace=web"
