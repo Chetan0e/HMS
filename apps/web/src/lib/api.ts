@@ -1,4 +1,13 @@
-const API_BASE = import.meta.env.VITE_API_BASE_URL || (import.meta.env.PROD ? 'https://hms-api-ljhy.onrender.com/api/v1' : '/api/v1');
+const getApiBase = (): string => {
+  const envUrl = import.meta.env.VITE_API_BASE_URL;
+  if (envUrl) {
+    const trimmed = envUrl.replace(/\/+$/, '');
+    return trimmed.endsWith('/api/v1') ? trimmed : `${trimmed}/api/v1`;
+  }
+  return import.meta.env.PROD ? 'https://hms-api-ljhy.onrender.com/api/v1' : '/api/v1';
+};
+
+const API_BASE = getApiBase();
 
 export class ApiError extends Error {
   status: number;
