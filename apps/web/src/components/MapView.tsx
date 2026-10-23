@@ -91,15 +91,17 @@ const AutoFitBounds: React.FC<{ properties: Property[] }> = ({ properties }) => 
     if (properties.length > 0) {
       const validPoints = properties
         .filter(p => p.latitude && p.longitude)
-        .map(p => [p.latitude, p.longitude] as [number, number]);
+        .map(p => [Number(p.latitude), Number(p.longitude)] as [number, number])
+        .filter(([lat, lng]) => !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0);
 
-      if (validPoints.length > 0) {
+      if (validPoints.length === 1) {
+        map.setView(validPoints[0], 13);
+      } else if (validPoints.length > 1) {
         const bounds = L.latLngBounds(validPoints);
-        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 14 });
+        map.fitBounds(bounds, { padding: [50, 50], maxZoom: 14 });
       }
-    } else {
-      map.invalidateSize();
     }
+    map.invalidateSize();
   }, [properties, map]);
 
   return null;
@@ -113,22 +115,25 @@ export const MapView: React.FC<MapViewProps> = ({
   selectedPropertyId,
   onSelectProperty
 }) => {
-  const defaultCenter = properties.length > 0 && properties[0].latitude && properties[0].longitude
-    ? [properties[0].latitude, properties[0].longitude] as [number, number]
+  const firstWithCoords = properties.find(
+    p => p.latitude && p.longitude && !isNaN(Number(p.latitude)) && !isNaN(Number(p.longitude)) && Number(p.latitude) !== 0
+  );
+  const defaultCenter: [number, number] = firstWithCoords
+    ? [Number(firstWithCoords.latitude), Number(firstWithCoords.longitude)]
     : center;
 
   return (
-    <div className="w-full h-full min-h-[450px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 relative z-0">
+    <div className="w-full h-full min-h-[450px] rounded-2xl overflow-hidden shadow-sm border border-slate-200 relative z-0 bg-slate-100">
       <MapContainer
         center={defaultCenter}
         zoom={zoom}
         scrollWheelZoom={true}
         className="w-full h-full min-h-[450px] z-0"
-        style={{ height: '100%', width: '100%' }}
+        style={{ height: '100%', minHeight: '450px', width: '100%' }}
       >
         <TileLayer
-          attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-          url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+          attribution='Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom'
+          url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
           maxZoom={19}
         />
 
@@ -137,9 +142,10 @@ export const MapView: React.FC<MapViewProps> = ({
 
         {properties.map((prop) => {
           const isSelected = selectedPropertyId === prop.id;
-          const lat = prop.latitude || center[0];
-          const lng = prop.longitude || center[1];
-          const pinIcon = createCustomPin(prop.deposit || 0, isSelected);
+          const lat = Number(prop.latitude) || center[0];
+          const lng = Number(prop.longitude) || center[1];
+          const displayPrice = prop.pricing_starting_from || prop.deposit || 0;
+          const pinIcon = createCustomPin(displayPrice, isSelected);
 
           return (
             <Marker
@@ -173,7 +179,7 @@ export const MapView: React.FC<MapViewProps> = ({
                   <p className="text-[11px] text-slate-500 mb-1.5">{prop.city}</p>
                   <div className="flex items-center justify-between pt-1 border-t border-slate-100">
                     <span className="font-black text-brand-600 text-xs">
-                      ₹{prop.deposit?.toLocaleString()}<span className="text-[10px] font-normal text-slate-400">/mo</span>
+                      ₹{displayPrice.toLocaleString()}<span className="text-[10px] font-normal text-slate-400">/mo</span>
                     </span>
                     <Link
                       to={`/property/${prop.slug}`}

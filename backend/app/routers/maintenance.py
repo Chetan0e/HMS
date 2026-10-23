@@ -5,6 +5,7 @@ from bson import ObjectId
 from app.schemas.schemas import MaintenanceCreate, MaintenanceStatus, ReviewCreate
 from app.core.database import get_database
 from app.dependencies import get_current_user, require_roles
+from app.utils.helpers import clean_doc
 
 router = APIRouter(prefix="", tags=["Maintenance & Reviews"])
 
@@ -12,15 +13,20 @@ router = APIRouter(prefix="", tags=["Maintenance & Reviews"])
 @router.post("/maintenance")
 async def create_maintenance_request(m_in: MaintenanceCreate, current_user: dict = Depends(get_current_user)):
     db = get_database()
+    if not ObjectId.is_valid(m_in.property_id):
+        raise HTTPException(status_code=400, detail="Invalid property ID")
+
     prop = await db.properties.find_one({"_id": ObjectId(m_in.property_id)})
     if not prop:
         raise HTTPException(status_code=404, detail="Property not found")
         
+    owner_id = str(prop.get("owner_id", ""))
+
     doc = {
-        "property_id": m_in.property_id,
-        "room_id": m_in.room_id,
+        "property_id": str(m_in.property_id),
+        "room_id": str(m_in.room_id) if m_in.room_id else None,
         "seeker_id": current_user["id"],
-        "owner_id": prop["owner_id"],
+        "owner_id": owner_id,
         "category": m_in.category,
         "title": m_in.title,
         "description": m_in.description,
@@ -33,7 +39,7 @@ async def create_maintenance_request(m_in: MaintenanceCreate, current_user: dict
     
     res = await db.maintenance_requests.insert_one(doc)
     doc["id"] = str(res.inserted_id)
-    return doc
+    return clean_doc(doc)
 
 @router.get("/maintenance")
 async def get_maintenance_requests(current_user: dict = Depends(get_current_user)):
@@ -43,30 +49,35 @@ async def get_maintenance_requests(current_user: dict = Depends(get_current_user
         query = {"seeker_id": current_user["id"]}
     elif current_user["role"] in ["OWNER", "MANAGER"]:
         query = {"owner_id": current_user["id"]}
+    elif current_user["role"] == "ADMIN":
+        query = {}
         
     cursor = db.maintenance_requests.find(query).sort("created_at", -1)
     items = []
     async for m in cursor:
-        m["id"] = str(m["_id"])
-        if ObjectId.is_valid(m["property_id"]):
+        if ObjectId.is_valid(m.get("property_id")):
             p = await db.properties.find_one({"_id": ObjectId(m["property_id"])})
             if p:
                 m["property_name"] = p.get("name")
-        items.append(m)
+        items.append(clean_doc(m))
     return items
 
 @router.patch("/maintenance/{m_id}/status")
 async def update_maintenance_status(m_id: str, status: MaintenanceStatus, current_user: dict = Depends(require_roles(["OWNER", "MANAGER", "ADMIN"]))):
     db = get_database()
+    if not ObjectId.is_valid(m_id):
+        raise HTTPException(status_code=400, detail="Invalid maintenance ID")
+
     await db.maintenance_requests.update_one({"_id": ObjectId(m_id)}, {"$set": {"status": status, "updated_at": datetime.utcnow()}})
     doc = await db.maintenance_requests.find_one({"_id": ObjectId(m_id)})
-    doc["id"] = str(doc["_id"])
-    return doc
+    return clean_doc(doc)
 
 # --- Reviews ---
 @router.post("/reviews")
-async def create_review(r_in: ReviewCreate, current_user: dict = Depends(require_roles(["SEEKER"]))):
+async def create_review(r_in: ReviewCreate, current_user: dict = Depends(require_roles(["SEEKER", "OWNER", "ADMIN"]))):
     db = get_database()
+    if not ObjectId.is_valid(r_in.property_id):
+        raise HTTPException(status_code=400, detail="Invalid property ID")
     
     # Check duplicate review
     existing = await db.reviews.find_one({
@@ -106,7 +117,7 @@ async def create_review(r_in: ReviewCreate, current_user: dict = Depends(require
         {"$set": {"rating": round(avg_rating, 1), "review_count": len(all_reviews)}}
     )
     
-    return doc
+    return clean_doc(doc)
 
 @router.get("/properties/{property_id}/reviews")
 async def get_property_reviews(property_id: str):
@@ -114,10 +125,9 @@ async def get_property_reviews(property_id: str):
     cursor = db.reviews.find({"property_id": property_id}).sort("created_at", -1)
     reviews = []
     async for r in cursor:
-        r["id"] = str(r["_id"])
-        if ObjectId.is_valid(r["seeker_id"]):
+        if ObjectId.is_valid(r.get("seeker_id")):
             u = await db.users.find_one({"_id": ObjectId(r["seeker_id"])})
             if u:
                 r["author_name"] = u.get("name")
-        reviews.append(r)
+        reviews.append(clean_doc(r))
     return reviews

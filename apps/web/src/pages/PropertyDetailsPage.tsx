@@ -6,6 +6,36 @@ import { Property, Room } from '../types';
 import { apiFetch } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
 import { CheckCircle2, Star, MapPin, Users, ShieldCheck, Wifi, Utensils, Shirt, Sparkles, Calendar, MessageSquare, ArrowRight, ArrowLeft, Building2, BedDouble, ClipboardList } from 'lucide-react';
+import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import L from 'leaflet';
+
+const MapResizer: React.FC = () => {
+  const map = useMap();
+  useEffect(() => {
+    const trigger = () => map.invalidateSize();
+    trigger();
+    const t1 = setTimeout(trigger, 150);
+    const t2 = setTimeout(trigger, 500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [map]);
+  return null;
+};
+
+const propertyPin = L.divIcon({
+  className: 'custom-map-pin',
+  html: `
+    <div style="display:flex;align-items:center;justify-content:center;">
+      <div style="width:36px;height:36px;background:#2563eb;border:3px solid #ffffff;border-radius:50% 50% 50% 0;transform:rotate(-45deg);display:flex;align-items:center;justify-content:center;box-shadow:0 10px 15px -3px rgba(0,0,0,0.3);">
+        <div style="width:10px;height:10px;background:#ffffff;border-radius:50%;transform:rotate(45deg);"></div>
+      </div>
+    </div>
+  `,
+  iconSize: [36, 36],
+  iconAnchor: [18, 36]
+});
 
 export const PropertyDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -19,7 +49,7 @@ export const PropertyDetailsPage: React.FC = () => {
 
   // Form states for booking & visit request
   const [moveInDate, setMoveInDate] = useState('');
-  const [stayDuration, setStayDuration] = useState('6 Months');
+  const [stayDuration, setStayDuration] = useState('1 Month');
   const [bookingNotes, setBookingNotes] = useState('');
   const [isSubmittingBooking, setIsSubmittingBooking] = useState(false);
   const [bookingSuccess, setBookingSuccess] = useState(false);
@@ -37,6 +67,9 @@ export const PropertyDetailsPage: React.FC = () => {
         setIsLoading(true);
         const prop = await apiFetch<Property>(`/properties/${slug}`);
         setProperty(prop);
+        if (prop?.minimum_stay) {
+          setStayDuration(prop.minimum_stay);
+        }
         const rms = await apiFetch<Room[]>(`/properties/${prop.id}/rooms`);
         setRooms(rms || []);
         if (rms && rms.length > 0) setSelectedRoom(rms[0]);
@@ -300,6 +333,53 @@ export const PropertyDetailsPage: React.FC = () => {
               </div>
             </div>
 
+            {/* Location & Neighborhood Map */}
+            {property.latitude && property.longitude && (
+              <div className="border-t border-slate-200 pt-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                  <div>
+                    <h2 className="text-base sm:text-lg font-bold text-slate-900">Location & Neighborhood</h2>
+                    <p className="text-xs text-slate-500 font-semibold flex items-center gap-1 mt-0.5">
+                      <MapPin className="w-3.5 h-3.5 text-brand-600 shrink-0" /> {property.address}, {property.city}
+                    </p>
+                  </div>
+                  <a
+                    href={`https://www.google.com/maps/search/?api=1&query=${property.latitude},${property.longitude}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-xs font-bold text-brand-600 hover:text-brand-700 hover:underline flex items-center gap-1 shrink-0"
+                  >
+                    Open in Google Maps ↗
+                  </a>
+                </div>
+
+                <div className="w-full h-64 sm:h-80 rounded-2xl overflow-hidden border border-slate-200 shadow-2xs relative z-0">
+                  <MapContainer
+                    center={[Number(property.latitude), Number(property.longitude)]}
+                    zoom={15}
+                    scrollWheelZoom={false}
+                    className="w-full h-full"
+                    style={{ height: '100%', width: '100%', minHeight: '250px' }}
+                  >
+                    <TileLayer
+                      attribution='Tiles &copy; Esri &mdash; Source: Esri'
+                      url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+                      maxZoom={19}
+                    />
+                    <MapResizer />
+                    <Marker position={[Number(property.latitude), Number(property.longitude)]} icon={propertyPin}>
+                      <Popup>
+                        <div className="p-1 font-bold text-xs text-slate-900">
+                          {property.name}
+                          <p className="text-[11px] font-normal text-slate-500">{property.address}</p>
+                        </div>
+                      </Popup>
+                    </Marker>
+                  </MapContainer>
+                </div>
+              </div>
+            )}
+
             {/* Owner Info Card */}
             <div className="border-t border-slate-200 pt-6">
               <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -464,16 +544,21 @@ export const PropertyDetailsPage: React.FC = () => {
 
 
                   <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1.5">Minimum Stay Duration</label>
+                    <label className="text-xs font-bold text-slate-700 block mb-1.5">
+                      Stay Duration {property?.minimum_stay ? `(Minimum: ${property.minimum_stay})` : ''}
+                    </label>
                     <select
                       value={stayDuration}
                       onChange={(e) => setStayDuration(e.target.value)}
-                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-semibold text-slate-900 cursor-pointer"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-3 text-xs font-semibold text-slate-900 cursor-pointer focus:outline-none focus:ring-2 focus:ring-brand-500"
                     >
                       <option value="1 Month">1 Month</option>
+                      <option value="2 Months">2 Months</option>
                       <option value="3 Months">3 Months</option>
                       <option value="6 Months">6 Months</option>
-                      <option value="12 Months">12 Months</option>
+                      <option value="9 Months">9 Months</option>
+                      <option value="11 Months">11 Months</option>
+                      <option value="12 Months">12 Months (1 Year)</option>
                     </select>
                   </div>
 

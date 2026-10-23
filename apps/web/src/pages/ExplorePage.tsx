@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Navbar } from '../components/ui/Navbar';
 import { Footer } from '../components/ui/Footer';
 import { PropertyCard } from '../components/PropertyCard';
 import { Property } from '../types';
 import { apiFetch } from '../lib/api';
-import { useSearchParams } from 'react-router-dom';
-import { Search, SlidersHorizontal, MapPin, LocateFixed, Loader2, X, Filter } from 'lucide-react';
+import { useSearchParams, Link } from 'react-router-dom';
+import { Search, SlidersHorizontal, MapPin, LocateFixed, Loader2, X, Filter, Map } from 'lucide-react';
 import { getUserLocation, reverseGeocodeCity } from '../lib/location';
 
 export const ExplorePage: React.FC = () => {
@@ -246,9 +247,17 @@ export const ExplorePage: React.FC = () => {
               <span>Filters</span>
             </button>
 
-            <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
+            <span className="text-xs text-slate-500 font-medium whitespace-nowrap hidden sm:inline">
               {properties.length} stays found
             </span>
+
+            <Link
+              to="/map"
+              className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold rounded-xl shadow-xs transition-colors"
+            >
+              <Map className="w-3.5 h-3.5 text-brand-400" />
+              <span>Map View</span>
+            </Link>
 
             <div className="flex items-center gap-1.5">
               <span className="text-xs text-slate-600 font-semibold hidden md:inline">Sort:</span>
@@ -386,26 +395,27 @@ export const ExplorePage: React.FC = () => {
       </main>
 
       {/* Mobile Filter Slide-up Bottom Sheet */}
-      {mobileFilterOpen && (
-        <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden animate-in fade-in duration-200">
+      {mobileFilterOpen && typeof document !== 'undefined' && createPortal(
+        <div className="fixed inset-0 z-[100] flex flex-col justify-end lg:hidden animate-in fade-in duration-200">
           <div 
             className="fixed inset-0 bg-black/60 backdrop-blur-xs" 
             onClick={() => setMobileFilterOpen(false)} 
           />
-          <div className="relative bg-white rounded-t-[2rem] p-6 max-h-[85vh] overflow-y-auto shadow-2xl border-t border-slate-100 flex flex-col animate-in slide-in-from-bottom duration-300">
+          <div className="relative z-10 bg-white rounded-t-[2rem] p-6 pb-safe pb-8 max-h-[85vh] overflow-y-auto shadow-2xl border-t border-slate-100 flex flex-col animate-in slide-in-from-bottom duration-300">
             <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4 shrink-0" />
             <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
               <h3 className="font-extrabold text-slate-900 text-base">Filter Stays</h3>
               <button 
                 onClick={() => setMobileFilterOpen(false)} 
-                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center"
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             {renderFilterContent()}
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       <Footer />

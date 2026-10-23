@@ -48,15 +48,21 @@
 .leaflet-container {
   width: 100% !important;
   height: 100% !important;
-  min-height: 100% !important;
+  min-height: 250px !important;
   border-radius: 1rem;
   z-index: 1;
-  background-color: #f8fafc !important;
+  background-color: #f1f5f9 !important;
 }
 
 .leaflet-tile-container img {
   max-width: none !important;
   max-height: none !important;
+}
+
+/* Reset default leaflet divIcon border/background */
+.leaflet-div-icon.custom-map-pin {
+  background: transparent !important;
+  border: none !important;
 }
 
 

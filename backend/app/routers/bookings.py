@@ -9,7 +9,7 @@ from app.dependencies import get_current_user, require_roles
 router = APIRouter(prefix="/bookings", tags=["Bookings"])
 
 @router.post("", response_model=BookingResponse)
-async def create_booking(booking_in: BookingCreate, current_user: dict = Depends(require_roles(["SEEKER"]))):
+async def create_booking(booking_in: BookingCreate, current_user: dict = Depends(require_roles(["SEEKER", "OWNER", "ADMIN"]))):
     db = get_database()
     
     if not ObjectId.is_valid(booking_in.property_id) or not ObjectId.is_valid(booking_in.room_id):
@@ -22,10 +22,6 @@ async def create_booking(booking_in: BookingCreate, current_user: dict = Depends
     room = await db.rooms.find_one({"_id": ObjectId(booking_in.room_id)})
     if not room:
         raise HTTPException(status_code=404, detail="Room not found")
-        
-    today_str = datetime.utcnow().strftime("%Y-%m-%d")
-    if booking_in.move_in_date < today_str:
-        raise HTTPException(status_code=400, detail="Move-in date cannot be in the past")
 
     # Check if user already has an active pending or approved booking for this property
     existing_active = await db.bookings.find_one({
@@ -35,8 +31,30 @@ async def create_booking(booking_in: BookingCreate, current_user: dict = Depends
     })
 
     if existing_active:
-        raise HTTPException(status_code=400, detail="You already have an active booking request for this property")
+        if existing_active.get("status") == BookingStatus.APPROVED:
+            raise HTTPException(status_code=400, detail="You already have an active approved booking for this property.")
+            
+        # Update existing pending booking request with new preferences
+        await db.bookings.update_one(
+            {"_id": existing_active["_id"]},
+            {"$set": {
+                "room_id": booking_in.room_id,
+                "move_in_date": booking_in.move_in_date,
+                "stay_duration": booking_in.stay_duration,
+                "notes": booking_in.notes or "",
+                "updated_at": datetime.utcnow()
+            }}
+        )
+        existing_active["id"] = str(existing_active["_id"])
+        existing_active["property_name"] = prop["name"]
+        existing_active["seeker_name"] = current_user["name"]
+        existing_active["room_id"] = booking_in.room_id
+        existing_active["move_in_date"] = booking_in.move_in_date
+        existing_active["stay_duration"] = booking_in.stay_duration
+        existing_active["notes"] = booking_in.notes or ""
+        return existing_active
         
+    stay_dur = booking_in.stay_duration if (booking_in.stay_duration and booking_in.stay_duration.strip()) else prop.get("minimum_stay", "1 Month")
     doc = {
         "seeker_id": current_user["id"],
         "owner_id": prop["owner_id"],
@@ -44,7 +62,7 @@ async def create_booking(booking_in: BookingCreate, current_user: dict = Depends
         "room_id": booking_in.room_id,
         "bed_id": None,
         "move_in_date": booking_in.move_in_date,
-        "stay_duration": booking_in.stay_duration,
+        "stay_duration": stay_dur,
         "status": BookingStatus.PENDING,
         "notes": booking_in.notes or "",
         "created_at": datetime.utcnow(),
@@ -163,6 +181,8 @@ async def update_booking_status(
         )
         
         # Also create a Resident record automatically
+        prop_stay = prop.get("minimum_stay", "1 Month") if prop else "1 Month"
+        stay_dur = booking.get("stay_duration") or prop_stay
         await db.residents.update_one(
             {"seeker_id": booking["seeker_id"], "property_id": booking["property_id"]},
             {"$set": {
@@ -172,6 +192,7 @@ async def update_booking_status(
                 "room_id": booking["room_id"],
                 "bed_id": assigned_bed_id,
                 "move_in_date": booking["move_in_date"],
+                "stay_duration": stay_dur,
                 "status": "ACTIVE",
                 "updated_at": datetime.utcnow()
             }},

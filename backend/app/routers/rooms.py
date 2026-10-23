@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, status, Depends
 from typing import List
 from datetime import datetime
 from bson import ObjectId
-from app.schemas.schemas import RoomCreate, RoomResponse, BedCreate, BedResponse, BedStatus
+from app.schemas.schemas import RoomCreate, RoomUpdate, RoomResponse, BedCreate, BedResponse, BedStatus
 from app.core.database import get_database
 from app.dependencies import get_current_user, require_roles
 from app.utils.helpers import clean_doc
@@ -85,6 +85,73 @@ async def get_rooms_by_property(property_id: str):
         rooms.append(room)
         
     return rooms
+
+@router.put("/{room_id}", response_model=RoomResponse)
+async def update_room(
+    property_id: str,
+    room_id: str,
+    room_update: RoomUpdate,
+    current_user: dict = Depends(require_roles(["OWNER", "MANAGER", "ADMIN"]))
+):
+    db = get_database()
+    if not ObjectId.is_valid(room_id):
+        raise HTTPException(status_code=400, detail="Invalid room ID")
+
+    existing = await db.rooms.find_one({"_id": ObjectId(room_id)})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Room not found")
+
+    update_data = {k: v for k, v in room_update.dict().items() if v is not None}
+    if update_data:
+        update_data["updated_at"] = datetime.utcnow()
+        await db.rooms.update_one({"_id": ObjectId(room_id)}, {"$set": update_data})
+
+    # Adjust bed count if capacity changed
+    if "capacity" in update_data:
+        new_cap = update_data["capacity"]
+        existing_beds = await db.beds.find({"room_id": room_id}).to_list(100)
+        curr_len = len(existing_beds)
+        bed_letters = ["A", "B", "C", "D", "E", "F", "G", "H"]
+        if new_cap > curr_len:
+            add_docs = []
+            for i in range(curr_len, new_cap):
+                letter = bed_letters[i] if i < len(bed_letters) else str(i+1)
+                add_docs.append({
+                    "property_id": property_id,
+                    "room_id": room_id,
+                    "bed_number": f"Bed {letter}",
+                    "status": BedStatus.AVAILABLE,
+                    "resident_id": None,
+                    "booking_id": None,
+                    "created_at": datetime.utcnow()
+                })
+            if add_docs:
+                await db.beds.insert_many(add_docs)
+        elif new_cap < curr_len:
+            # remove excess available beds
+            excess = curr_len - new_cap
+            avail_beds = [b for b in existing_beds if b.get("status") == BedStatus.AVAILABLE]
+            to_remove = avail_beds[-excess:]
+            if to_remove:
+                del_ids = [b["_id"] for b in to_remove]
+                await db.beds.delete_many({"_id": {"$in": del_ids}})
+
+    updated = await db.rooms.find_one({"_id": ObjectId(room_id)})
+    updated = clean_doc(updated)
+
+    beds_cursor = db.beds.find({"room_id": room_id})
+    beds = []
+    avail_count = 0
+    async for b in beds_cursor:
+        b = clean_doc(b)
+        if b.get("status") == BedStatus.AVAILABLE:
+            avail_count += 1
+        beds.append(b)
+
+    updated["beds"] = beds
+    updated["available_beds"] = avail_count
+    updated["total_beds"] = len(beds)
+    return updated
 
 @router.delete("/{room_id}")
 async def delete_room(property_id: str, room_id: str, current_user: dict = Depends(require_roles(["OWNER", "MANAGER", "ADMIN"]))):

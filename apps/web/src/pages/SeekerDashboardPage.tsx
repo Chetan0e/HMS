@@ -18,6 +18,8 @@ export const SeekerDashboardPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'stay' | 'bookings' | 'visits' | 'saved' | 'maintenance' | 'enquiries'>('bookings');
   
   const [myStay, setMyStay] = useState<ResidentStay | null>(null);
+  const [allStays, setAllStays] = useState<ResidentStay[]>([]);
+  const [selectedStayFilter, setSelectedStayFilter] = useState<string>('ALL');
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [visits, setVisits] = useState<Visit[]>([]);
   const [savedProperties, setSavedProperties] = useState<Property[]>([]);
@@ -38,13 +40,29 @@ export const SeekerDashboardPage: React.FC = () => {
   const loadData = async () => {
     setLoading(true);
     try {
-      // Load my stay
+      // Load my stays
       try {
-        const stayData = await apiFetch<ResidentStay>('/residents/my-stay');
-        setMyStay(stayData);
-        if (stayData) setActiveTab('stay');
+        const stays = await apiFetch<ResidentStay[]>('/residents/my-stays');
+        const list = Array.isArray(stays) ? stays : [];
+        setAllStays(list);
+        if (list.length > 0) {
+          setMyStay(prev => {
+            if (prev) {
+              const matched = list.find(s => s.property_id === prev.property_id || s.id === prev.id);
+              if (matched) return matched;
+            }
+            return list[0];
+          });
+          const urlParams = new URLSearchParams(window.location.search);
+          if (!urlParams.get('tab')) {
+            setActiveTab('stay');
+          }
+        } else {
+          setMyStay(null);
+        }
       } catch (e) {
         setMyStay(null);
+        setAllStays([]);
       }
 
       // Load bookings
@@ -68,8 +86,9 @@ export const SeekerDashboardPage: React.FC = () => {
       setEnquiries(e || []);
 
       // Load recommended properties
-      const props = await apiFetch<Property[]>('/search');
-      setRecommended(props?.slice(0, 3) || []);
+      const propsRes = await apiFetch<any>('/search');
+      const propsList = Array.isArray(propsRes) ? propsRes : (propsRes?.items || []);
+      setRecommended(propsList.slice(0, 3));
     } catch (err) {
       console.error('Error loading seeker dashboard data:', err);
     } finally {
@@ -145,18 +164,21 @@ export const SeekerDashboardPage: React.FC = () => {
   // Submit Maintenance Request
   const handleSubmitMaintenance = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!myStay) return;
+    if (!myStay || !myStay.property_id) {
+      alert('Could not find active stay property details. Please refresh the page.');
+      return;
+    }
     setMSubmitting(true);
     try {
       await apiFetch('/maintenance', {
         method: 'POST',
         body: JSON.stringify({
           property_id: myStay.property_id,
-          room_id: myStay.room_id,
+          room_id: myStay.room_id || null,
           category: mCategory,
-          title: mTitle,
+          title: mTitle.trim(),
           priority: mPriority,
-          description: mDescription
+          description: mDescription.trim()
         })
       });
       setShowMaintenanceModal(false);
@@ -276,7 +298,7 @@ export const SeekerDashboardPage: React.FC = () => {
         <div className="grid grid-cols-3 gap-2 md:hidden">
           {/* Active Stay */}
           <div 
-            onClick={() => handleSelectTab(myStay ? 'stay' : 'bookings')}
+            onClick={() => handleSelectTab(allStays.length > 0 ? 'stay' : 'bookings')}
             className={`p-3 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'stay' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
             }`}
@@ -284,9 +306,9 @@ export const SeekerDashboardPage: React.FC = () => {
             <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center mb-1.5">
               <Home className="w-4 h-4" />
             </div>
-            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Active Stay</span>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Active Stays</span>
             <span className="text-xs font-black text-slate-900 truncate block mt-0.5">
-              {myStay ? `Room ${myStay.room_number || ''}` : 'None'}
+              {allStays.length > 0 ? `${allStays.length} Active` : 'None'}
             </span>
           </div>
 
@@ -366,7 +388,7 @@ export const SeekerDashboardPage: React.FC = () => {
           
           {/* Active Stay */}
           <div 
-            onClick={() => handleSelectTab(myStay ? 'stay' : 'bookings')}
+            onClick={() => handleSelectTab(allStays.length > 0 ? 'stay' : 'bookings')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'stay' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -375,13 +397,14 @@ export const SeekerDashboardPage: React.FC = () => {
               <div className="w-9 h-9 rounded-xl bg-brand-100 text-brand-700 flex items-center justify-center">
                 <Home className="w-5 h-5" />
               </div>
-              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${myStay ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
-                {myStay ? 'Resident' : 'None'}
+              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${allStays.length > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-slate-100 text-slate-500'}`}>
+                {allStays.length > 0 ? 'Resident' : 'None'}
               </span>
             </div>
-            <span className="text-[11px] text-slate-500 font-semibold block">Active Stay</span>
-            <span className="text-base font-bold text-slate-900 truncate block">
-              {myStay ? `Room ${myStay.room_number || 'N/A'}` : 'No Active Stay'}
+            <span className="text-[11px] text-slate-500 font-semibold block">Active Stays</span>
+            <span className="text-xl font-black text-slate-900">{allStays.length}</span>
+            <span className="text-[10px] text-slate-500 truncate block mt-0.5">
+              {allStays.length === 1 ? allStays[0].property_name : allStays.length > 1 ? `${allStays.length} Residences` : 'No Active Stay'}
             </span>
           </div>
 
@@ -469,14 +492,17 @@ export const SeekerDashboardPage: React.FC = () => {
 
         {/* Mobile Native App Segmented Tab Control */}
         <div className="flex md:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar -mx-3.5 px-3.5">
-          {myStay && (
+          {allStays.length > 0 && (
             <button
               onClick={() => handleSelectTab('stay')}
               className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
                 activeTab === 'stay' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
               }`}
             >
-              <Home className="w-3.5 h-3.5" /> My Stay
+              <Home className="w-3.5 h-3.5" /> My Stays
+              <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'stay' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                {allStays.length}
+              </span>
             </button>
           )}
           <button
@@ -538,14 +564,14 @@ export const SeekerDashboardPage: React.FC = () => {
 
         {/* Desktop Dashboard Navigation Tabs (Preserved for desktop) */}
         <div className="hidden md:flex border-b border-slate-200 items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          {myStay && (
+          {allStays.length > 0 && (
             <button
               onClick={() => handleSelectTab('stay')}
               className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
                 activeTab === 'stay' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              <Home className="w-4 h-4" /> My Active Stay
+              <Home className="w-4 h-4" /> My Active Stays ({allStays.length})
             </button>
           )}
           <button
@@ -595,65 +621,44 @@ export const SeekerDashboardPage: React.FC = () => {
         {/* 1. MY ACTIVE STAY TAB */}
         {activeTab === 'stay' && (
           <div className="space-y-6">
-            {myStay ? (
-              <div className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-8">
-                <div className="flex flex-col lg:flex-row gap-6 lg:items-center justify-between border-b border-slate-100 pb-6 mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 rounded-2xl bg-brand-100 text-brand-700 flex items-center justify-center overflow-hidden shrink-0">
-                      {myStay.property_image ? (
-                        <img src={myStay.property_image} alt={myStay.property_name} className="w-full h-full object-cover" />
-                      ) : (
-                        <Home className="w-8 h-8" />
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">ACTIVE RESIDENT</span>
-                        <span className="text-xs text-slate-500">Move-in: {myStay.move_in_date}</span>
-                      </div>
-                      <h2 className="text-xl font-bold text-slate-900 mt-1">{myStay.property_name || 'HMS Partner Residence'}</h2>
-                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
-                        <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        {myStay.property_address}, {myStay.property_city}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex flex-wrap items-center gap-3">
-                    <button
-                      onClick={() => setShowMaintenanceModal(true)}
-                      className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5"
-                    >
-                      <Plus className="w-4 h-4" /> Raise Maintenance Issue
-                    </button>
-                  </div>
+            {allStays.length > 1 && (
+              <div className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+                <div className="flex items-center gap-2">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                  <span className="text-xs font-bold text-slate-800">Your Active Residences ({allStays.length}):</span>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <span className="text-xs text-slate-500 font-semibold block mb-1">Room & Bed Info</span>
-                    <div className="text-lg font-extrabold text-slate-900">Room {myStay.room_number || '101'}</div>
-                    <p className="text-xs text-slate-600 mt-1">Bed: {myStay.bed_number || 'Bed A'} ({myStay.room_type || 'Single Room'})</p>
-                  </div>
-
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <span className="text-xs text-slate-500 font-semibold block mb-1">Monthly Rent</span>
-                    <div className="text-lg font-extrabold text-brand-600">₹{myStay.monthly_rent?.toLocaleString() || '12,000'} / mo</div>
-                    <p className="text-xs text-emerald-600 font-medium mt-1">Deposit Paid: ₹{myStay.deposit?.toLocaleString() || '15,000'}</p>
-                  </div>
-
-                  <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
-                    <span className="text-xs text-slate-500 font-semibold block mb-1">Property Owner & Manager</span>
-                    <div className="text-sm font-bold text-slate-900">{myStay.owner_name || 'Property Host'}</div>
-                    {myStay.owner_phone ? (
-                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                        <Phone className="w-3 h-3 text-slate-400" /> {myStay.owner_phone}
-                      </p>
-                    ) : null}
-                  </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() => setSelectedStayFilter('ALL')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                      selectedStayFilter === 'ALL'
+                        ? 'bg-brand-600 text-white shadow-xs'
+                        : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                    }`}
+                  >
+                    View All ({allStays.length})
+                  </button>
+                  {allStays.map(s => (
+                    <button
+                      key={s.id || s.property_id}
+                      onClick={() => {
+                        setSelectedStayFilter(s.property_id);
+                        setMyStay(s);
+                      }}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        selectedStayFilter === s.property_id
+                          ? 'bg-brand-600 text-white shadow-xs'
+                          : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      {s.property_name} {s.room_number ? `• Room ${s.room_number}` : ''}
+                    </button>
+                  ))}
                 </div>
               </div>
-            ) : (
+            )}
+
+            {allStays.length === 0 ? (
               <div className="bg-white p-8 rounded-3xl border border-slate-200 text-center space-y-4">
                 <Home className="w-12 h-12 text-slate-300 mx-auto" />
                 <h3 className="text-base font-bold text-slate-900">No Active Resident Stay</h3>
@@ -664,6 +669,87 @@ export const SeekerDashboardPage: React.FC = () => {
                   Explore Stays <ArrowRight className="w-4 h-4" />
                 </Link>
               </div>
+            ) : (
+              (selectedStayFilter === 'ALL' ? allStays : allStays.filter(s => s.property_id === selectedStayFilter || s.id === selectedStayFilter)).map(stay => (
+                <div key={stay.id || stay.property_id} className="bg-white rounded-3xl border border-slate-200 shadow-md p-6 sm:p-8 space-y-6">
+                  <div className="flex flex-col lg:flex-row gap-6 lg:items-center justify-between border-b border-slate-100 pb-6">
+                    <div className="flex items-center gap-4">
+                      <div className="w-16 h-16 rounded-2xl bg-brand-100 text-brand-700 flex items-center justify-center overflow-hidden shrink-0">
+                        {stay.property_image ? (
+                          <img src={stay.property_image} alt={stay.property_name} className="w-full h-full object-cover" />
+                        ) : (
+                          <Home className="w-8 h-8" />
+                        )}
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="bg-emerald-100 text-emerald-800 text-[10px] font-extrabold px-2.5 py-0.5 rounded-full">ACTIVE RESIDENT</span>
+                          <span className="text-xs text-slate-500">Move-in: <strong className="text-slate-700">{stay.move_in_date || 'Confirmed'}</strong></span>
+                          {(stay.stay_duration || stay.minimum_stay) && (
+                            <span className="bg-brand-50 text-brand-700 text-[10px] font-bold px-2 py-0.5 rounded-md border border-brand-200">
+                              Duration: {stay.stay_duration || stay.minimum_stay}
+                            </span>
+                          )}
+                        </div>
+                        <h2 className="text-xl font-bold text-slate-900 mt-1">{stay.property_name || 'HMS Partner Residence'}</h2>
+                        <p className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
+                          <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                          {stay.property_address}, {stay.property_city}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setMyStay(stay);
+                          setShowMaintenanceModal(true);
+                        }}
+                        className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white text-xs font-bold rounded-xl transition-all shadow-sm flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Plus className="w-4 h-4" /> Raise Maintenance Issue
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Room & Bed Info</span>
+                      <div className="text-lg font-extrabold text-slate-900">Room {stay.room_number || 'Standard'}</div>
+                      <p className="text-xs text-slate-600 mt-1">Bed: {stay.bed_number || 'Bed A'} ({stay.room_type || 'Single Room'})</p>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Monthly Rent & Deposit</span>
+                      <div className="text-lg font-extrabold text-brand-600">
+                        {stay.monthly_rent ? `₹${stay.monthly_rent.toLocaleString()} / mo` : 'Contact Host'}
+                      </div>
+                      <div className="flex items-center gap-2 mt-1">
+                        {stay.deposit ? (
+                          <span className="text-xs text-emerald-600 font-medium">Deposit: ₹{stay.deposit.toLocaleString()}</span>
+                        ) : null}
+                        {(stay.stay_duration || stay.minimum_stay) && (
+                          <span className="text-xs text-slate-500 font-medium">• {stay.stay_duration || stay.minimum_stay}</span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                      <span className="text-xs text-slate-500 font-semibold block mb-1">Property Owner & Host</span>
+                      <div className="text-sm font-bold text-slate-900">{stay.owner_name || 'Property Host'}</div>
+                      {stay.owner_phone && stay.owner_phone !== '93331113311' ? (
+                        <p className="text-xs text-slate-600 flex items-center gap-1 mt-1 font-semibold">
+                          <Phone className="w-3 h-3 text-slate-400" /> {stay.owner_phone}
+                        </p>
+                      ) : (
+                        <p className="text-xs text-slate-500 mt-1 font-medium flex items-center gap-1">
+                          <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> HMS Verified Host
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
             )}
           </div>
         )}
@@ -700,7 +786,8 @@ export const SeekerDashboardPage: React.FC = () => {
                       <div>
                         <h4 className="font-extrabold text-slate-900 text-base">{b.property_name || 'Stay Reservation'}</h4>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          Move-in Date: <strong className="text-slate-800">{b.move_in_date}</strong> | Duration: {b.stay_duration}
+                          Move-in Date: <strong className="text-slate-800">{b.move_in_date}</strong>
+                          {b.stay_duration ? ` | Duration: ${b.stay_duration}` : ''}
                         </p>
                         {b.notes && <p className="text-xs text-slate-600 italic mt-1">"{b.notes}"</p>}
                       </div>
@@ -715,6 +802,22 @@ export const SeekerDashboardPage: React.FC = () => {
                       }`}>
                         {b.status}
                       </span>
+
+                      {b.status === 'APPROVED' && (
+                        <button
+                          onClick={() => {
+                            setSelectedStayFilter(b.property_id);
+                            const foundStay = allStays.find(s => s.property_id === b.property_id);
+                            if (foundStay) {
+                              setMyStay(foundStay);
+                            }
+                            handleSelectTab('stay');
+                          }}
+                          className="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold rounded-xl border border-emerald-200 transition-colors cursor-pointer flex items-center gap-1 shadow-2xs"
+                        >
+                          <Home className="w-3.5 h-3.5" /> View Active Stay →
+                        </button>
+                      )}
 
                       {b.status === 'PENDING' && (
                         <button

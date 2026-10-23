@@ -16,11 +16,21 @@ export const MapPage: React.FC = () => {
     const loadProps = async () => {
       try {
         setIsLoading(true);
-        const res = await apiFetch<{ items: Property[] }>('/search?page_size=50');
-        let items = res.items || [];
+        let items: Property[] = [];
+        try {
+          const res = await apiFetch<any>('/search?page_size=50');
+          items = Array.isArray(res) ? res : (res?.items || []);
+        } catch (searchErr) {
+          console.warn('Search query error in MapPage:', searchErr);
+        }
+
         if (items.length === 0) {
-          const myProps = await apiFetch<Property[]>('/properties/my-properties');
-          items = myProps || [];
+          try {
+            const myProps = await apiFetch<any>('/properties/my-properties');
+            items = Array.isArray(myProps) ? myProps : (myProps?.items || []);
+          } catch {
+            // Unauthenticated or seeker, ignore
+          }
         }
         setProperties(items);
       } catch (e) {

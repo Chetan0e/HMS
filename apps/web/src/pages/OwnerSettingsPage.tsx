@@ -133,6 +133,7 @@ export const OwnerSettingsPage: React.FC = () => {
                   <label className="text-xs font-bold text-slate-700 block mb-1.5">Phone Number</label>
                   <input
                     type="text"
+                    autoComplete="off"
                     value={phone}
                     onChange={e => setPhone(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-2.5 text-xs font-semibold text-slate-800"

@@ -1,4 +1,5 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
 import { useCompareStore } from '../../stores/compareStore';
@@ -19,7 +20,16 @@ export const MobileProfileSheet: React.FC<MobileProfileSheetProps> = ({ isOpen, 
   const { items: compareItems } = useCompareStore();
   const navigate = useNavigate();
 
-  if (!isOpen) return null;
+  useEffect(() => {
+    if (isOpen) {
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = '';
+      };
+    }
+  }, [isOpen]);
+
+  if (!isOpen || typeof document === 'undefined') return null;
 
   const handleLogout = () => {
     logout();
@@ -27,8 +37,8 @@ export const MobileProfileSheet: React.FC<MobileProfileSheetProps> = ({ isOpen, 
     navigate('/login');
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end md:hidden animate-in fade-in duration-200">
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex flex-col justify-end md:hidden animate-in fade-in duration-200">
       {/* Backdrop */}
       <div 
         className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity" 
@@ -37,7 +47,7 @@ export const MobileProfileSheet: React.FC<MobileProfileSheetProps> = ({ isOpen, 
       />
 
       {/* Slide-up Sheet */}
-      <div className="relative bg-white rounded-t-[2rem] shadow-2xl max-h-[85vh] overflow-y-auto w-full border-t border-slate-100 flex flex-col p-5 pb-8 animate-in slide-in-from-bottom duration-300">
+      <div className="relative z-10 bg-white rounded-t-[2rem] shadow-2xl max-h-[85vh] overflow-y-auto w-full border-t border-slate-100 flex flex-col p-5 pb-safe pb-8 animate-in slide-in-from-bottom duration-300">
         
         {/* Drag handle */}
         <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4 shrink-0" />
@@ -47,7 +57,7 @@ export const MobileProfileSheet: React.FC<MobileProfileSheetProps> = ({ isOpen, 
           <span className="text-xs font-extrabold uppercase tracking-wider text-slate-400">Account & Menu</span>
           <button 
             onClick={onClose}
-            className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors"
+            className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-colors cursor-pointer"
             aria-label="Close menu"
           >
             <X className="w-4 h-4" />
@@ -252,6 +262,7 @@ export const MobileProfileSheet: React.FC<MobileProfileSheetProps> = ({ isOpen, 
           </Link>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };

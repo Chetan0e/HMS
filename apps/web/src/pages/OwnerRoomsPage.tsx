@@ -21,6 +21,18 @@ export const OwnerRoomsPage: React.FC = () => {
   const [newDeposit, setNewDeposit] = useState(10000);
   const [targetPropId, setTargetPropId] = useState('');
 
+  // Form State for Edit Room Modal
+  const [editingRoom, setEditingRoom] = useState<any | null>(null);
+  const [editRoomNumber, setEditRoomNumber] = useState('');
+  const [editFloor, setEditFloor] = useState(1);
+  const [editRoomType, setEditRoomType] = useState('Single');
+  const [editCapacity, setEditCapacity] = useState(1);
+  const [editPrice, setEditPrice] = useState(10000);
+  const [editDeposit, setEditDeposit] = useState(10000);
+  const [editDescription, setEditDescription] = useState('');
+  const [isUpdatingRoom, setIsUpdatingRoom] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+
   const loadData = async () => {
     try {
       setIsLoading(true);
@@ -36,6 +48,7 @@ export const OwnerRoomsPage: React.FC = () => {
             if (pRooms) {
               pRooms.forEach(r => {
                 r.property_name = p.name;
+                r.property_id = r.property_id || p.id;
               });
               allRooms = [...allRooms, ...pRooms];
             }
@@ -77,11 +90,68 @@ export const OwnerRoomsPage: React.FC = () => {
 
       const prop = properties.find(p => p.id === targetPropId);
       created.property_name = prop?.name || 'Property';
+      created.property_id = targetPropId;
       setRooms(prev => [created, ...prev]);
       setIsAddRoomOpen(false);
       setNewRoomNumber('');
     } catch (err: any) {
       alert(err.message || 'Failed creating room');
+    }
+  };
+
+  const handleOpenEditModal = (room: any) => {
+    const propId = room.property_id || (selectedPropertyId !== 'ALL' ? selectedPropertyId : targetPropId) || properties[0]?.id;
+    setEditingRoom({ ...room, property_id: propId });
+    setEditRoomNumber(room.room_number || '');
+    setEditFloor(room.floor || 1);
+    setEditRoomType(room.room_type || 'Single');
+    setEditCapacity(room.capacity || 1);
+    setEditPrice(room.price || 10000);
+    setEditDeposit(room.deposit || 10000);
+    setEditDescription(room.description || '');
+  };
+
+  const handleUpdateRoom = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingRoom) return;
+    try {
+      setIsUpdatingRoom(true);
+      const updated = await apiFetch<any>(`/properties/${editingRoom.property_id}/rooms/${editingRoom.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          room_number: editRoomNumber,
+          floor: editFloor,
+          room_type: editRoomType,
+          capacity: editCapacity,
+          price: editPrice,
+          deposit: editDeposit,
+          description: editDescription
+        })
+      });
+
+      setRooms(prev => prev.map(r => r.id === editingRoom.id ? { ...r, ...updated, property_name: editingRoom.property_name } : r));
+      setEditingRoom(null);
+      setToastMessage(`Room #${editRoomNumber} updated successfully!`);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err: any) {
+      alert(err.message || 'Failed updating room');
+    } finally {
+      setIsUpdatingRoom(false);
+    }
+  };
+
+  const handleDeleteRoom = async (room: any) => {
+    if (!confirm(`Are you sure you want to delete Room #${room.room_number}?`)) return;
+    try {
+      await apiFetch(`/properties/${room.property_id}/rooms/${room.id}`, {
+        method: 'DELETE'
+      });
+      setRooms(prev => prev.filter(r => r.id !== room.id));
+      if (editingRoom?.id === room.id) setEditingRoom(null);
+      setToastMessage(`Room #${room.room_number} deleted.`);
+      setTimeout(() => setToastMessage(null), 3500);
+    } catch (err: any) {
+      alert(err.message || 'Failed deleting room');
     }
   };
 
@@ -141,6 +211,13 @@ export const OwnerRoomsPage: React.FC = () => {
             <Plus className="w-4 h-4" /> Add New Room
           </button>
         </div>
+
+        {toastMessage && (
+          <div className="mb-6 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-2.5 text-emerald-800 text-xs font-bold animate-in fade-in">
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+            <span>{toastMessage}</span>
+          </div>
+        )}
 
         {/* Filter & Summary Bar */}
         <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs mb-8 flex flex-col md:flex-row items-center justify-between gap-4">
@@ -246,8 +323,18 @@ export const OwnerRoomsPage: React.FC = () => {
                 </div>
 
                 <div className="mt-4 pt-3 border-t border-slate-100 flex justify-end gap-2">
-                  <button className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1">
+                  <button
+                    onClick={() => handleOpenEditModal(room)}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-brand-50 hover:text-brand-700 text-slate-700 rounded-lg text-xs font-bold flex items-center gap-1 transition-colors cursor-pointer"
+                  >
                     <Edit className="w-3.5 h-3.5" /> Edit Room
+                  </button>
+                  <button
+                    onClick={() => handleDeleteRoom(room)}
+                    className="p-1.5 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                    title="Delete Room"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>
               </div>
@@ -360,6 +447,141 @@ export const OwnerRoomsPage: React.FC = () => {
                   >
                     Create Room
                   </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
+        {/* Edit Room Modal */}
+        {editingRoom && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+            <div className="bg-white rounded-3xl p-6 max-w-lg w-full border border-slate-200 shadow-2xl">
+              <div className="flex items-center justify-between pb-3 border-b border-slate-100 mb-4">
+                <div>
+                  <h3 className="text-lg font-black text-slate-900">Edit Room #{editingRoom.room_number}</h3>
+                  <p className="text-xs text-slate-500 font-semibold">{editingRoom.property_name || 'Property Room'}</p>
+                </div>
+                <button
+                  onClick={() => setEditingRoom(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <form onSubmit={handleUpdateRoom} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Room Number *</label>
+                    <input
+                      type="text"
+                      required
+                      value={editRoomNumber}
+                      onChange={e => setEditRoomNumber(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Floor</label>
+                    <input
+                      type="number"
+                      value={editFloor}
+                      onChange={e => setEditFloor(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Room Type</label>
+                    <select
+                      value={editRoomType}
+                      onChange={e => setEditRoomType(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                    >
+                      <option value="Single">Single Private</option>
+                      <option value="Double Sharing">Double Sharing</option>
+                      <option value="Triple Sharing">Triple Sharing</option>
+                      <option value="Four Sharing">Four Sharing</option>
+                      <option value="Dormitory">Dormitory</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Capacity (Beds)</label>
+                    <input
+                      type="number"
+                      min={1}
+                      max={12}
+                      value={editCapacity}
+                      onChange={e => setEditCapacity(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Monthly Rent (₹) *</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={editPrice}
+                      onChange={e => setEditPrice(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-bold text-slate-700 block mb-1">Deposit (₹) *</label>
+                    <input
+                      type="number"
+                      required
+                      min={0}
+                      value={editDeposit}
+                      onChange={e => setEditDeposit(Number(e.target.value))}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Room Description</label>
+                  <textarea
+                    rows={2}
+                    value={editDescription}
+                    onChange={e => setEditDescription(e.target.value)}
+                    placeholder="e.g. Spacious corner room with attached balcony and cross ventilation"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold"
+                  />
+                </div>
+
+                <div className="flex justify-between items-center gap-3 pt-4 border-t border-slate-100">
+                  <button
+                    type="button"
+                    onClick={() => handleDeleteRoom(editingRoom)}
+                    className="px-3 py-2 text-xs font-bold text-red-600 hover:bg-red-50 rounded-xl transition-colors"
+                  >
+                    Delete Room
+                  </button>
+
+                  <div className="flex gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setEditingRoom(null)}
+                      className="px-4 py-2 text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 rounded-xl"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isUpdatingRoom}
+                      className="px-5 py-2 text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 rounded-xl shadow-sm cursor-pointer"
+                    >
+                      {isUpdatingRoom ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>

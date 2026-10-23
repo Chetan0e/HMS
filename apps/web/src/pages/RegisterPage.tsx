@@ -202,6 +202,7 @@ export const RegisterPage: React.FC = () => {
                 <input
                   type="tel"
                   required
+                  autoComplete="off"
                   placeholder="+91 98XXXXXXXX"
                   value={phone}
                   onChange={e => setPhone(e.target.value)}

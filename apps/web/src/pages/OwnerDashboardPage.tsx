@@ -531,7 +531,7 @@ export const OwnerDashboardPage: React.FC = () => {
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-slate-500">Stay Duration</span>
-                    <span className="font-bold text-slate-900">{selectedBookingForDetails.stay_duration || '6 Months'}</span>
+                    <span className="font-bold text-slate-900">{selectedBookingForDetails.stay_duration || 'Flexible'}</span>
                   </div>
                 </div>
               </div>

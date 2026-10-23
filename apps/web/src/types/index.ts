@@ -155,6 +155,8 @@ export interface ResidentStay {
   monthly_rent?: number;
   deposit?: number;
   bed_number?: string;
+  stay_duration?: string;
+  minimum_stay?: string;
 }
 
 export interface MaintenanceItem {

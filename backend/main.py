@@ -1,4 +1,12 @@
 import os
+import sys
+from pathlib import Path
+
+# Add backend directory to sys.path so it can be executed from workspace root
+backend_dir = str(Path(__file__).resolve().parent)
+if backend_dir not in sys.path:
+    sys.path.insert(0, backend_dir)
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -60,4 +68,4 @@ async def root():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=settings.PORT, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=settings.PORT, reload=True, app_dir=backend_dir)

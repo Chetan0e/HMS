@@ -278,6 +278,7 @@ async def seed_database():
                 "room_id": str(r2_id),
                 "bed_id": str(b1_id),
                 "move_in_date": "2026-06-15",
+                "stay_duration": pdata.get("minimum_stay", "1 Month"),
                 "status": "ACTIVE",
                 "payment_status": "PAID",
                 "created_at": datetime.now(timezone.utc)
@@ -290,7 +291,7 @@ async def seed_database():
                 "room_id": str(r2_id),
                 "bed_id": str(b1_id),
                 "move_in_date": "2026-06-15",
-                "stay_duration": "6 Months",
+                "stay_duration": pdata.get("minimum_stay", "1 Month"),
                 "status": "APPROVED",
                 "notes": "Move-in confirmed",
                 "created_at": datetime.now(timezone.utc),

@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import { getUserLocation } from '../lib/location';
 
 
@@ -60,6 +61,21 @@ const MapLocationPicker: React.FC<{
   );
 };
 
+const MapResizer: React.FC = () => {
+  const map = useMap();
+  useEffect(() => {
+    const invalidate = () => map.invalidateSize();
+    invalidate();
+    const t1 = setTimeout(invalidate, 150);
+    const t2 = setTimeout(invalidate, 500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [map]);
+  return null;
+};
+
 interface RoomConfig {
   room_number: string;
   floor: number;
@@ -82,13 +98,7 @@ export const AddPropertyPage: React.FC = () => {
   const [propertyType, setPropertyType] = useState('PG');
   const [genderPolicy, setGenderPolicy] = useState('Unisex');
   const [description, setDescription] = useState('');
-  const [contactPhone, setContactPhone] = useState(user?.phone || '');
-
-  useEffect(() => {
-    if (user?.phone && !contactPhone) {
-      setContactPhone(user.phone);
-    }
-  }, [user]);
+  const [contactPhone, setContactPhone] = useState('');
 
   // Step 2: Location & Map Pin
   const [address, setAddress] = useState('');
@@ -395,7 +405,8 @@ export const AddPropertyPage: React.FC = () => {
                 <label className="text-xs font-bold text-slate-700 block mb-1.5">Contact Phone Number</label>
                 <input
                   type="tel"
-                  placeholder="e.g. +91 98123 45678"
+                  placeholder="Optional contact phone"
+                  autoComplete="off"
                   value={contactPhone}
                   onChange={e => setContactPhone(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-900"
@@ -490,11 +501,14 @@ export const AddPropertyPage: React.FC = () => {
                     zoom={13}
                     scrollWheelZoom={true}
                     className="w-full h-full"
+                    style={{ height: '100%', width: '100%', minHeight: '256px' }}
                   >
                     <TileLayer
-                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      attribution='Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom'
+                      url="https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}"
+                      maxZoom={19}
                     />
+                    <MapResizer />
                     <MapLocationPicker
                       lat={latitude}
                       lng={longitude}

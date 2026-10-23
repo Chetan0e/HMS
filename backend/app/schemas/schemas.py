@@ -215,6 +215,17 @@ class RoomCreate(BaseModel):
     amenities: List[str] = []
     description: Optional[str] = ""
 
+class RoomUpdate(BaseModel):
+    room_number: Optional[str] = None
+    floor: Optional[int] = None
+    room_type: Optional[RoomType] = None
+    capacity: Optional[int] = None
+    price: Optional[float] = None
+    deposit: Optional[float] = None
+    amenities: Optional[List[str]] = None
+    description: Optional[str] = None
+    status: Optional[str] = None
+
 class RoomResponse(BaseModel):
     id: str
     property_id: str
@@ -306,7 +317,7 @@ class ReviewCreate(BaseModel):
 # --- Maintenance Schema ---
 class MaintenanceCreate(BaseModel):
     property_id: str
-    room_id: str
+    room_id: Optional[str] = None
     category: str
     title: str
     description: str
