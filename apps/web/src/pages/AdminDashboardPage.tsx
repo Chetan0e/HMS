@@ -41,7 +41,7 @@ export const AdminDashboardPage: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 space-y-8">
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 pb-28 md:py-8 w-full flex-1 space-y-8">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-navy-900 text-white flex items-center justify-center font-bold">
             <ShieldCheck className="w-6 h-6" />

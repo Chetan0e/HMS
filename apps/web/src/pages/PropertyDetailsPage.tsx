@@ -5,7 +5,7 @@ import { Footer } from '../components/ui/Footer';
 import { Property, Room } from '../types';
 import { apiFetch } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
-import { CheckCircle2, Star, MapPin, Users, ShieldCheck, Wifi, Utensils, Shirt, Sparkles, Calendar, MessageSquare, ArrowRight, Building2, BedDouble, ClipboardList } from 'lucide-react';
+import { CheckCircle2, Star, MapPin, Users, ShieldCheck, Wifi, Utensils, Shirt, Sparkles, Calendar, MessageSquare, ArrowRight, ArrowLeft, Building2, BedDouble, ClipboardList } from 'lucide-react';
 
 export const PropertyDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -161,8 +161,17 @@ export const PropertyDetailsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50 pb-20 lg:pb-0">
+    <div className="min-h-screen flex flex-col bg-slate-50 pb-24 lg:pb-0 relative">
       <Navbar />
+
+      {/* Floating Back Button on Mobile */}
+      <button 
+        onClick={handleBack} 
+        className="md:hidden fixed top-2.5 left-3 z-50 p-2 rounded-full bg-white/90 backdrop-blur-md shadow-md text-slate-800 hover:bg-white transition-all cursor-pointer border border-slate-200/80"
+        aria-label="Go back"
+      >
+        <ArrowLeft className="w-4 h-4" />
+      </button>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1">
         {/* Back Link */}
@@ -548,7 +557,7 @@ export const PropertyDetailsPage: React.FC = () => {
       )}
 
       {/* Floating Sticky Mobile Booking Bar */}
-      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3.5 bg-white border-t border-slate-200 z-40 flex items-center justify-between shadow-2xl">
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3.5 bg-white/95 backdrop-blur-md border-t border-slate-200/90 z-40 flex items-center justify-between shadow-[0_-4px_25px_rgba(0,0,0,0.08)] pb-[max(env(safe-area-inset-bottom),0.75rem)]">
         {isOwner ? (
           <div className="w-full flex items-center justify-between gap-3">
             <div>

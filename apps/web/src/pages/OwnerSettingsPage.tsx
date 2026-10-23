@@ -48,7 +48,7 @@ export const OwnerSettingsPage: React.FC = () => {
         </div>
       )}
 
-      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto w-full max-w-5xl mx-auto">
+      <main className="flex-1 p-4 pb-28 sm:p-6 lg:p-8 overflow-y-auto w-full max-w-5xl mx-auto">
         {/* Mobile Header Bar */}
         <div className="flex items-center justify-between lg:hidden mb-6 bg-white p-3.5 rounded-2xl border border-slate-200 shadow-2xs">
           <div className="flex items-center gap-2.5">

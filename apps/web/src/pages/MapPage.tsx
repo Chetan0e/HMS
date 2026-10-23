@@ -66,7 +66,7 @@ export const MapPage: React.FC = () => {
         </div>
       </div>
 
-      <main className="flex-1 flex flex-col md:flex-row h-[calc(100vh-64px)] w-full overflow-hidden">
+      <main className="flex-1 flex flex-col md:flex-row h-[calc(100vh-120px)] md:h-[calc(100vh-64px)] w-full overflow-hidden">
         {/* Map View - Expanded to full window canvas */}
         <div className={`flex-1 h-full w-full p-1 sm:p-2 ${mobileView === 'list' ? 'hidden md:block' : 'block'}`}>
           <MapView
@@ -78,7 +78,7 @@ export const MapPage: React.FC = () => {
 
 
         {/* Sidebar Cards */}
-        <div className={`w-full md:w-96 bg-white border-l border-slate-200 p-4 overflow-y-auto space-y-4 ${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>
+        <div className={`w-full md:w-96 bg-white border-l border-slate-200 p-4 pb-24 md:pb-4 overflow-y-auto space-y-4 ${mobileView === 'map' ? 'hidden md:block' : 'block'}`}>
           <div className="flex items-center justify-between">
             <h2 className="font-bold text-slate-900 text-sm">Nearby Stays ({properties.length})</h2>
             <span className="text-[10px] font-semibold text-slate-400">Click a pin on map to select</span>

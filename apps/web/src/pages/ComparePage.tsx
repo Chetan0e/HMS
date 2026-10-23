@@ -9,7 +9,7 @@ export const ComparePage: React.FC = () => {
   const { items, removeItem, clear } = useCompareStore();
 
   return (
-    <div className="min-h-screen flex flex-col bg-slate-50">
+    <div className="min-h-screen flex flex-col bg-slate-50 pb-24 md:pb-0">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1">
