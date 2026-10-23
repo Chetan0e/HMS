@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { OwnerSidebar } from '../components/ui/OwnerSidebar';
 import { useAuthStore } from '../stores/authStore';
 import { User, Building, CreditCard, Bell, Shield, Menu, Check } from 'lucide-react';
@@ -10,12 +10,20 @@ export const OwnerSettingsPage: React.FC = () => {
   const [isSaved, setIsSaved] = useState(false);
 
   // Form State
-  const [name, setName] = useState(user?.name || 'Rahul Sharma');
-  const [phone, setPhone] = useState(user?.phone || '+91 98123 45678');
-  const [email, setEmail] = useState(user?.email || 'owner@hms.com');
-  const [businessName, setBusinessName] = useState('HMS Executive Stays');
-  const [bankAccount, setBankAccount] = useState('981230491029');
-  const [ifsc, setIFSC] = useState('HDFC0000123');
+  const [name, setName] = useState(user?.name || '');
+  const [phone, setPhone] = useState(user?.phone || '');
+  const [email, setEmail] = useState(user?.email || '');
+  const [businessName, setBusinessName] = useState('HMS Properties');
+  const [bankAccount, setBankAccount] = useState('');
+  const [ifsc, setIFSC] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      if (user.name) setName(user.name);
+      if (user.phone) setPhone(user.phone);
+      if (user.email) setEmail(user.email);
+    }
+  }, [user]);
 
   const handleSave = (e: React.FormEvent) => {
     e.preventDefault();

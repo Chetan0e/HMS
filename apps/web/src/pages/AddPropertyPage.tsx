@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { OwnerSidebar } from '../components/ui/OwnerSidebar';
 import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../stores/authStore';
 import { apiFetch } from '../lib/api';
 import { 
   Check, ArrowRight, ArrowLeft, Upload, Plus, Trash2, MapPin, 
@@ -70,6 +71,7 @@ interface RoomConfig {
 
 export const AddPropertyPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthStore();
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
@@ -80,7 +82,13 @@ export const AddPropertyPage: React.FC = () => {
   const [propertyType, setPropertyType] = useState('PG');
   const [genderPolicy, setGenderPolicy] = useState('Unisex');
   const [description, setDescription] = useState('');
-  const [contactPhone, setContactPhone] = useState('+91 98765 43210');
+  const [contactPhone, setContactPhone] = useState(user?.phone || '');
+
+  useEffect(() => {
+    if (user?.phone && !contactPhone) {
+      setContactPhone(user.phone);
+    }
+  }, [user]);
 
   // Step 2: Location & Map Pin
   const [address, setAddress] = useState('');
@@ -387,7 +395,7 @@ export const AddPropertyPage: React.FC = () => {
                 <label className="text-xs font-bold text-slate-700 block mb-1.5">Contact Phone Number</label>
                 <input
                   type="tel"
-                  placeholder="+91 98765 43210"
+                  placeholder="e.g. +91 98123 45678"
                   value={contactPhone}
                   onChange={e => setContactPhone(e.target.value)}
                   className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-xs font-semibold text-slate-900"
@@ -484,8 +492,8 @@ export const AddPropertyPage: React.FC = () => {
                     className="w-full h-full"
                   >
                     <TileLayer
-                      attribution='&copy; <a href="https://carto.com/">CARTO</a>'
-                      url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
+                      attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
                     />
                     <MapLocationPicker
                       lat={latitude}

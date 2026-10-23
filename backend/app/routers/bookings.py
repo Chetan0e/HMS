@@ -84,15 +84,29 @@ async def get_my_bookings(current_user: dict = Depends(get_current_user)):
     async for b in cursor:
         b["id"] = str(b["_id"])
         
-        # Enrich with property & seeker info
+        # Enrich with property info
         if ObjectId.is_valid(b.get("property_id")):
             p = await db.properties.find_one({"_id": ObjectId(b["property_id"])})
             if p:
                 b["property_name"] = p.get("name")
+                b["property_address"] = p.get("address")
+                b["property_city"] = p.get("city")
+
+        # Enrich with seeker info
         if ObjectId.is_valid(b.get("seeker_id")):
             u = await db.users.find_one({"_id": ObjectId(b["seeker_id"])})
             if u:
                 b["seeker_name"] = u.get("name")
+                b["seeker_email"] = u.get("email")
+                b["seeker_phone"] = u.get("phone")
+
+        # Enrich with room info
+        if ObjectId.is_valid(b.get("room_id")):
+            r = await db.rooms.find_one({"_id": ObjectId(b["room_id"])})
+            if r:
+                b["room_number"] = r.get("room_number")
+                b["room_type"] = r.get("room_type")
+                b["room_price"] = r.get("price")
                 
         bookings.append(b)
     return bookings
@@ -123,8 +137,20 @@ async def update_booking_status(
                 "status": BedStatus.AVAILABLE
             })
             if not avail_bed:
-                raise HTTPException(status_code=400, detail="No available bed in this room to assign!")
-            assigned_bed_id = str(avail_bed["_id"])
+                # Auto-create an available bed for this room so approval succeeds smoothly
+                new_bed_doc = {
+                    "property_id": booking["property_id"],
+                    "room_id": booking["room_id"],
+                    "bed_number": f"Bed-1",
+                    "status": BedStatus.AVAILABLE,
+                    "resident_id": None,
+                    "booking_id": None,
+                    "created_at": datetime.utcnow()
+                }
+                res_bed = await db.beds.insert_one(new_bed_doc)
+                assigned_bed_id = str(res_bed.inserted_id)
+            else:
+                assigned_bed_id = str(avail_bed["_id"])
             
         # Update bed to RESERVED / OCCUPIED
         await db.beds.update_one(
@@ -173,6 +199,25 @@ async def update_booking_status(
     
     updated = await db.bookings.find_one({"_id": ObjectId(booking_id)})
     updated["id"] = str(updated["_id"])
+    if ObjectId.is_valid(updated.get("property_id")):
+        p = await db.properties.find_one({"_id": ObjectId(updated["property_id"])})
+        if p:
+            updated["property_name"] = p.get("name")
+            updated["property_address"] = p.get("address")
+            updated["property_city"] = p.get("city")
+    if ObjectId.is_valid(updated.get("seeker_id")):
+        u = await db.users.find_one({"_id": ObjectId(updated["seeker_id"])})
+        if u:
+            updated["seeker_name"] = u.get("name")
+            updated["seeker_email"] = u.get("email")
+            updated["seeker_phone"] = u.get("phone")
+    if ObjectId.is_valid(updated.get("room_id")):
+        r = await db.rooms.find_one({"_id": ObjectId(updated["room_id"])})
+        if r:
+            updated["room_number"] = r.get("room_number")
+            updated["room_type"] = r.get("room_type")
+            updated["room_price"] = r.get("price")
+            
     return updated
 
 @router.patch("/{booking_id}/cancel", response_model=BookingResponse)

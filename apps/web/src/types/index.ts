@@ -42,6 +42,9 @@ export interface Property {
   views: number;
   created_at: string;
   updated_at: string;
+  owner_name?: string;
+  owner_phone?: string;
+  owner_email?: string;
 }
 
 export interface Room {
@@ -84,7 +87,14 @@ export interface Booking {
   notes?: string;
   created_at: string;
   property_name?: string;
+  property_address?: string;
+  property_city?: string;
   seeker_name?: string;
+  seeker_email?: string;
+  seeker_phone?: string;
+  room_number?: string;
+  room_type?: string;
+  room_price?: number;
 }
 
 export interface Visit {

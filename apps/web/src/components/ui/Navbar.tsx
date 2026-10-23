@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '../../stores/authStore';
-import { Bell, Heart, MessageSquare, LogOut, ShieldCheck, Menu, X, Building2, MapPin, SlidersHorizontal, User as UserIcon } from 'lucide-react';
+import { Bell, Heart, MessageSquare, LogOut, ShieldCheck, Menu, X, User as UserIcon, Search } from 'lucide-react';
 
 import { Logo } from './Logo';
+import { MobileProfileSheet } from './MobileProfileSheet';
 
 export const Navbar: React.FC = () => {
   const { user, logout } = useAuthStore();
@@ -11,11 +12,11 @@ export const Navbar: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-xs">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
+    <header className="sticky top-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-2xs">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 md:h-16 flex items-center justify-between">
         
         {/* Brand Logo */}
-        <Link to="/" className="group">
+        <Link to="/" className="group flex items-center">
           <Logo size="md" />
         </Link>
 
@@ -85,120 +86,55 @@ export const Navbar: React.FC = () => {
           )}
         </div>
 
-        {/* Mobile Hamburger Toggle Button */}
+        {/* Mobile App Bar Actions */}
         <div className="flex items-center gap-2 md:hidden">
-          <button
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
-            aria-label="Toggle menu"
-          >
-            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          {user ? (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/explore"
+                className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors"
+                aria-label="Search stays"
+              >
+                <Search className="w-4 h-4" />
+              </Link>
+
+              {/* User Avatar Chip that opens native mobile sheet */}
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="flex items-center gap-1.5 p-1 rounded-full bg-slate-100 hover:bg-slate-200 transition-colors border border-slate-200/80 cursor-pointer"
+                aria-label="Open user menu"
+              >
+                <div className="w-7 h-7 rounded-full bg-brand-600 text-white font-extrabold flex items-center justify-center text-xs shadow-xs">
+                  {user.name.charAt(0).toUpperCase()}
+                </div>
+                <Menu className="w-4 h-4 text-slate-600 mr-1" />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <Link
+                to="/login"
+                className="px-3 py-1.5 bg-brand-50 text-brand-700 text-xs font-bold rounded-xl hover:bg-brand-100 transition-colors"
+              >
+                Sign In
+              </Link>
+              <button
+                onClick={() => setMobileMenuOpen(true)}
+                className="p-2 rounded-xl text-slate-700 hover:bg-slate-100 transition-colors"
+                aria-label="Open menu"
+              >
+                <Menu className="w-5 h-5" />
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* Mobile Navigation Drawer Overlay */}
-      {mobileMenuOpen && (
-        <div className="md:hidden border-t border-slate-200 bg-white px-4 pt-4 pb-6 space-y-4 shadow-xl animate-in slide-in-from-top-2">
-          <nav className="flex flex-col space-y-2">
-            <Link
-              to="/explore"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl font-semibold text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors"
-            >
-              Explore Stays
-            </Link>
-            <Link
-              to="/map"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl font-semibold text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors"
-            >
-              Interactive Map
-            </Link>
-            <Link
-              to="/compare"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl font-semibold text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors"
-            >
-              Compare Stays
-            </Link>
-            <Link
-              to="/#about"
-              onClick={() => setMobileMenuOpen(false)}
-              className="px-3 py-2.5 rounded-xl font-semibold text-sm text-slate-700 hover:bg-brand-50 hover:text-brand-600 transition-colors"
-            >
-              About HMS
-            </Link>
-          </nav>
-
-          <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
-            {user ? (
-              <>
-                <div className="flex items-center justify-between p-3 bg-slate-50 rounded-xl mb-1">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-brand-600 text-white font-bold flex items-center justify-center text-xs">
-                      {user.name.charAt(0)}
-                    </div>
-                    <div>
-                      <p className="text-xs font-bold text-slate-900">{user.name}</p>
-                      <p className="text-[10px] text-slate-500 capitalize">{user.role.toLowerCase()}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => { logout(); setMobileMenuOpen(false); navigate('/login'); }}
-                    className="text-xs font-bold text-red-600 bg-red-50 px-2.5 py-1 rounded-lg"
-                  >
-                    Logout
-                  </button>
-                </div>
-
-                {user.role === 'OWNER' || user.role === 'MANAGER' ? (
-                  <Link
-                    to="/owner"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2.5 text-center font-bold text-xs text-white bg-brand-600 rounded-xl shadow-sm"
-                  >
-                    Owner Dashboard
-                  </Link>
-                ) : user.role === 'ADMIN' ? (
-                  <Link
-                    to="/admin"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2.5 text-center font-bold text-xs text-white bg-navy-900 rounded-xl shadow-sm"
-                  >
-                    Admin Portal
-                  </Link>
-                ) : (
-                  <Link
-                    to="/app"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="w-full py-2.5 text-center font-bold text-xs text-slate-800 bg-slate-100 rounded-xl"
-                  >
-                    My Dashboard
-                  </Link>
-                )}
-              </>
-            ) : (
-              <div className="grid grid-cols-2 gap-2">
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-2.5 text-center font-bold text-xs text-slate-700 bg-slate-100 rounded-xl"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="py-2.5 text-center font-bold text-xs text-white bg-brand-600 rounded-xl shadow-sm"
-                >
-                  Get Started
-                </Link>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+      {/* Native-feeling Mobile Profile & Menu Bottom Sheet */}
+      <MobileProfileSheet 
+        isOpen={mobileMenuOpen} 
+        onClose={() => setMobileMenuOpen(false)} 
+      />
     </header>
   );
 };

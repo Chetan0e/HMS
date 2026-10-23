@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Building2, BedDouble, Users, CreditCard, Wrench, BarChart3, Settings, HelpCircle, LogOut, PlusCircle, X, ShieldCheck } from 'lucide-react';
+import { LayoutDashboard, Building2, BedDouble, Users, CreditCard, Wrench, BarChart3, Settings, HelpCircle, LogOut, PlusCircle, X, ShieldCheck, ClipboardList } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
 import { Logo } from './Logo';
 
@@ -15,6 +15,7 @@ export const OwnerSidebar: React.FC<OwnerSidebarProps> = ({ onCloseMobile }) => 
   const navItems = [
     { label: 'Dashboard', icon: LayoutDashboard, path: '/owner' },
     { label: 'Properties', icon: Building2, path: '/owner/properties' },
+    { label: 'Booking Requests', icon: ClipboardList, path: '/owner/bookings' },
     { label: 'Rooms & Beds', icon: BedDouble, path: '/owner/rooms' },
     { label: 'Residents', icon: Users, path: '/owner/residents' },
     { label: 'Payments', icon: CreditCard, path: '/owner/payments' },

@@ -51,8 +51,8 @@ export const OwnerResidentsPage: React.FC = () => {
     const newRes = {
       id: `res-${Date.now()}`,
       name: newResidentName,
-      phone: newResidentPhone || '+91 98000 00000',
-      email: newResidentEmail || 'tenant@gmail.com',
+      phone: newResidentPhone || '',
+      email: newResidentEmail || '',
       property_name: 'Shree Mahalaxmi Executive PG',
       room_number: '105',
       bed_number: 'Bed A',

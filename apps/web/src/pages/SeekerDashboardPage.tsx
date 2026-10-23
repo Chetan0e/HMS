@@ -10,10 +10,11 @@ import {
   Plus, CheckCircle2, AlertCircle, X, ShieldCheck, MapPin, Phone, 
   Mail, ArrowRight, Compass, Filter, RefreshCw
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 
 export const SeekerDashboardPage: React.FC = () => {
   const { user } = useAuthStore();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [activeTab, setActiveTab] = useState<'stay' | 'bookings' | 'visits' | 'saved' | 'maintenance' | 'enquiries'>('bookings');
   
   const [myStay, setMyStay] = useState<ResidentStay | null>(null);
@@ -79,6 +80,20 @@ export const SeekerDashboardPage: React.FC = () => {
   useEffect(() => {
     loadData();
   }, []);
+
+  useEffect(() => {
+    const tabParam = searchParams.get('tab');
+    if (tabParam && ['stay', 'bookings', 'visits', 'saved', 'maintenance', 'enquiries'].includes(tabParam)) {
+      setActiveTab(tabParam as any);
+    }
+  }, [searchParams]);
+
+  const handleSelectTab = (tab: 'stay' | 'bookings' | 'visits' | 'saved' | 'maintenance' | 'enquiries') => {
+    setActiveTab(tab);
+    const params = new URLSearchParams(searchParams);
+    params.set('tab', tab);
+    setSearchParams(params, { replace: true });
+  };
 
   const triggerNotification = (msg: string) => {
     setActionSuccess(msg);
@@ -163,7 +178,7 @@ export const SeekerDashboardPage: React.FC = () => {
     <div className="min-h-screen flex flex-col bg-slate-50">
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full flex-1 space-y-8">
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 pt-4 pb-28 md:py-8 w-full flex-1 space-y-5 md:space-y-8">
         
         {/* Toast Alert */}
         {actionSuccess && (
@@ -178,8 +193,51 @@ export const SeekerDashboardPage: React.FC = () => {
           </div>
         )}
 
-        {/* Hero Header Banner */}
-        <div className="bg-gradient-to-r from-brand-900 via-navy-900 to-brand-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
+        {/* Mobile App Greeting Header (Visible only on mobile) */}
+        <div className="block md:hidden bg-gradient-to-br from-brand-900 via-navy-900 to-brand-800 text-white rounded-3xl p-5 shadow-lg relative overflow-hidden">
+          <div className="absolute top-0 right-0 -mr-12 -mt-12 w-48 h-48 rounded-full bg-brand-500/20 blur-2xl pointer-events-none" />
+          <div className="relative z-10 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="bg-brand-500/20 text-brand-300 text-[10px] px-2.5 py-1 rounded-full font-bold uppercase tracking-wider flex items-center gap-1.5 border border-brand-400/30">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-400" /> Verified Seeker Portal
+              </span>
+              <button
+                onClick={loadData}
+                className="p-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-semibold transition-all border border-white/10"
+                title="Refresh Dashboard"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              </button>
+            </div>
+
+            <div>
+              <h1 className="text-xl font-black tracking-tight text-white">
+                Welcome back, {user?.name?.split(' ')[0] || 'Resident'}!
+              </h1>
+              <p className="text-[11px] text-slate-300 mt-0.5 leading-relaxed">
+                {myStay ? `Active resident in Room ${myStay.room_number || ''}` : 'Manage active stays, bookings & service requests'}
+              </p>
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <Link
+                to="/explore"
+                className="px-3.5 py-2 bg-brand-600 hover:bg-brand-500 text-white rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1.5"
+              >
+                <Compass className="w-3.5 h-3.5" /> Explore Stays
+              </Link>
+              <Link
+                to="/map"
+                className="px-3.5 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold transition-all border border-white/10 flex items-center gap-1.5"
+              >
+                <MapPin className="w-3.5 h-3.5" /> Map View
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Desktop Hero Header Banner (Preserved for desktop) */}
+        <div className="hidden md:block bg-gradient-to-r from-brand-900 via-navy-900 to-brand-800 text-white rounded-3xl p-6 sm:p-8 shadow-xl relative overflow-hidden">
           <div className="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-brand-500/10 blur-3xl pointer-events-none"></div>
           <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
@@ -214,12 +272,101 @@ export const SeekerDashboardPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Quick Stats Grid */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* Mobile Quick Stats 3x2 Grid */}
+        <div className="grid grid-cols-3 gap-2 md:hidden">
+          {/* Active Stay */}
+          <div 
+            onClick={() => handleSelectTab(myStay ? 'stay' : 'bookings')}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              activeTab === 'stay' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-brand-100 text-brand-700 flex items-center justify-center mb-1.5">
+              <Home className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Active Stay</span>
+            <span className="text-xs font-black text-slate-900 truncate block mt-0.5">
+              {myStay ? `Room ${myStay.room_number || ''}` : 'None'}
+            </span>
+          </div>
+
+          {/* Active Bookings */}
+          <div 
+            onClick={() => handleSelectTab('bookings')}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              activeTab === 'bookings' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center mb-1.5">
+              <Calendar className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Bookings</span>
+            <span className="text-sm font-black text-slate-900 mt-0.5 block">{activeBookingsCount}</span>
+          </div>
+
+          {/* Scheduled Visits */}
+          <div 
+            onClick={() => handleSelectTab('visits')}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              activeTab === 'visits' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center mb-1.5">
+              <Clock className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Visits</span>
+            <span className="text-sm font-black text-slate-900 mt-0.5 block">{scheduledVisitsCount}</span>
+          </div>
+
+          {/* Saved Stays */}
+          <div 
+            onClick={() => handleSelectTab('saved')}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              activeTab === 'saved' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center mb-1.5">
+              <Heart className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Saved</span>
+            <span className="text-sm font-black text-slate-900 mt-0.5 block">{savedProperties.length}</span>
+          </div>
+
+          {/* Maintenance */}
+          <div 
+            onClick={() => handleSelectTab('maintenance')}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              activeTab === 'maintenance' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center mb-1.5">
+              <Wrench className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Issues</span>
+            <span className="text-sm font-black text-slate-900 mt-0.5 block">{maintenance.length}</span>
+          </div>
+
+          {/* Enquiries */}
+          <div 
+            onClick={() => handleSelectTab('enquiries')}
+            className={`p-3 rounded-2xl border transition-all cursor-pointer ${
+              activeTab === 'enquiries' ? 'bg-brand-50 border-brand-400 ring-2 ring-brand-500/20 shadow-xs' : 'bg-white border-slate-200'
+            }`}
+          >
+            <div className="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center mb-1.5">
+              <MessageSquare className="w-4 h-4" />
+            </div>
+            <span className="text-[10px] text-slate-500 font-semibold block leading-tight">Enquiries</span>
+            <span className="text-sm font-black text-slate-900 mt-0.5 block">{enquiries.length}</span>
+          </div>
+        </div>
+
+        {/* Desktop Quick Stats Grid (Preserved for desktop) */}
+        <div className="hidden md:grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           
           {/* Active Stay */}
           <div 
-            onClick={() => setActiveTab(myStay ? 'stay' : 'bookings')}
+            onClick={() => handleSelectTab(myStay ? 'stay' : 'bookings')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'stay' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -240,7 +387,7 @@ export const SeekerDashboardPage: React.FC = () => {
 
           {/* Active Bookings */}
           <div 
-            onClick={() => setActiveTab('bookings')}
+            onClick={() => handleSelectTab('bookings')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'bookings' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -256,7 +403,7 @@ export const SeekerDashboardPage: React.FC = () => {
 
           {/* Scheduled Visits */}
           <div 
-            onClick={() => setActiveTab('visits')}
+            onClick={() => handleSelectTab('visits')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'visits' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -272,7 +419,7 @@ export const SeekerDashboardPage: React.FC = () => {
 
           {/* Saved Stays */}
           <div 
-            onClick={() => setActiveTab('saved')}
+            onClick={() => handleSelectTab('saved')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'saved' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -288,7 +435,7 @@ export const SeekerDashboardPage: React.FC = () => {
 
           {/* Maintenance Requests */}
           <div 
-            onClick={() => setActiveTab('maintenance')}
+            onClick={() => handleSelectTab('maintenance')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'maintenance' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -304,7 +451,7 @@ export const SeekerDashboardPage: React.FC = () => {
 
           {/* Enquiries */}
           <div 
-            onClick={() => setActiveTab('enquiries')}
+            onClick={() => handleSelectTab('enquiries')}
             className={`p-4 rounded-2xl border transition-all cursor-pointer ${
               activeTab === 'enquiries' ? 'bg-brand-50 border-brand-300 shadow-sm' : 'bg-white border-slate-200 hover:border-brand-200'
             }`}
@@ -320,11 +467,80 @@ export const SeekerDashboardPage: React.FC = () => {
 
         </div>
 
-        {/* Dashboard Navigation Tabs */}
-        <div className="border-b border-slate-200 flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+        {/* Mobile Native App Segmented Tab Control */}
+        <div className="flex md:hidden items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none no-scrollbar -mx-3.5 px-3.5">
           {myStay && (
             <button
-              onClick={() => setActiveTab('stay')}
+              onClick={() => handleSelectTab('stay')}
+              className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+                activeTab === 'stay' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
+              }`}
+            >
+              <Home className="w-3.5 h-3.5" /> My Stay
+            </button>
+          )}
+          <button
+            onClick={() => handleSelectTab('bookings')}
+            className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'bookings' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <Calendar className="w-3.5 h-3.5" /> Bookings
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'bookings' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {bookings.length}
+            </span>
+          </button>
+          <button
+            onClick={() => handleSelectTab('visits')}
+            className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'visits' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <Clock className="w-3.5 h-3.5" /> Visits
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'visits' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {visits.length}
+            </span>
+          </button>
+          <button
+            onClick={() => handleSelectTab('saved')}
+            className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'saved' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <Heart className="w-3.5 h-3.5" /> Saved
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'saved' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {savedProperties.length}
+            </span>
+          </button>
+          <button
+            onClick={() => handleSelectTab('maintenance')}
+            className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'maintenance' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <Wrench className="w-3.5 h-3.5" /> Issues
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'maintenance' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {maintenance.length}
+            </span>
+          </button>
+          <button
+            onClick={() => handleSelectTab('enquiries')}
+            className={`px-3.5 py-2 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+              activeTab === 'enquiries' ? 'bg-brand-600 text-white shadow-sm' : 'bg-white text-slate-600 border border-slate-200'
+            }`}
+          >
+            <MessageSquare className="w-3.5 h-3.5" /> Enquiries
+            <span className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${activeTab === 'enquiries' ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-600'}`}>
+              {enquiries.length}
+            </span>
+          </button>
+        </div>
+
+        {/* Desktop Dashboard Navigation Tabs (Preserved for desktop) */}
+        <div className="hidden md:flex border-b border-slate-200 items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
+          {myStay && (
+            <button
+              onClick={() => handleSelectTab('stay')}
               className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
                 activeTab === 'stay' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
               }`}
@@ -333,7 +549,7 @@ export const SeekerDashboardPage: React.FC = () => {
             </button>
           )}
           <button
-            onClick={() => setActiveTab('bookings')}
+            onClick={() => handleSelectTab('bookings')}
             className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
               activeTab === 'bookings' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -341,7 +557,7 @@ export const SeekerDashboardPage: React.FC = () => {
             <Calendar className="w-4 h-4" /> My Bookings ({bookings.length})
           </button>
           <button
-            onClick={() => setActiveTab('visits')}
+            onClick={() => handleSelectTab('visits')}
             className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
               activeTab === 'visits' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -349,7 +565,7 @@ export const SeekerDashboardPage: React.FC = () => {
             <Clock className="w-4 h-4" /> Scheduled Visits ({visits.length})
           </button>
           <button
-            onClick={() => setActiveTab('saved')}
+            onClick={() => handleSelectTab('saved')}
             className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
               activeTab === 'saved' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -357,7 +573,7 @@ export const SeekerDashboardPage: React.FC = () => {
             <Heart className="w-4 h-4" /> Saved Stays ({savedProperties.length})
           </button>
           <button
-            onClick={() => setActiveTab('maintenance')}
+            onClick={() => handleSelectTab('maintenance')}
             className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
               activeTab === 'maintenance' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -365,7 +581,7 @@ export const SeekerDashboardPage: React.FC = () => {
             <Wrench className="w-4 h-4" /> Maintenance ({maintenance.length})
           </button>
           <button
-            onClick={() => setActiveTab('enquiries')}
+            onClick={() => handleSelectTab('enquiries')}
             className={`px-4 py-2.5 text-xs font-bold rounded-xl whitespace-nowrap transition-all flex items-center gap-2 ${
               activeTab === 'enquiries' ? 'bg-brand-600 text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100'
             }`}
@@ -428,10 +644,12 @@ export const SeekerDashboardPage: React.FC = () => {
 
                   <div className="bg-slate-50 p-5 rounded-2xl border border-slate-100">
                     <span className="text-xs text-slate-500 font-semibold block mb-1">Property Owner & Manager</span>
-                    <div className="text-sm font-bold text-slate-900">{myStay.owner_name || 'Rahul Sharma'}</div>
-                    <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
-                      <Phone className="w-3 h-3 text-slate-400" /> {myStay.owner_phone || '+91 98123 45678'}
-                    </p>
+                    <div className="text-sm font-bold text-slate-900">{myStay.owner_name || 'Property Host'}</div>
+                    {myStay.owner_phone ? (
+                      <p className="text-xs text-slate-500 flex items-center gap-1 mt-1">
+                        <Phone className="w-3 h-3 text-slate-400" /> {myStay.owner_phone}
+                      </p>
+                    ) : null}
                   </div>
                 </div>
               </div>

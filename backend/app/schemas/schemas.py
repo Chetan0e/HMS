@@ -200,6 +200,9 @@ class PropertyResponse(BaseModel):
     created_at: datetime
     updated_at: datetime
     rooms_summary: Optional[List[Dict[str, Any]]] = None
+    owner_name: Optional[str] = None
+    owner_phone: Optional[str] = None
+    owner_email: Optional[str] = None
 
 # --- Room & Bed Schemas ---
 class RoomCreate(BaseModel):
@@ -267,6 +270,13 @@ class BookingResponse(BaseModel):
     updated_at: datetime
     property_name: Optional[str] = None
     seeker_name: Optional[str] = None
+    seeker_email: Optional[str] = None
+    seeker_phone: Optional[str] = None
+    room_number: Optional[str] = None
+    room_type: Optional[str] = None
+    room_price: Optional[float] = None
+    property_address: Optional[str] = None
+    property_city: Optional[str] = None
 
 # --- Enquiry & Visit Schemas ---
 class EnquiryCreate(BaseModel):

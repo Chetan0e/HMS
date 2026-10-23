@@ -5,7 +5,8 @@ import { apiFetch } from '../lib/api';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { 
   Building2, BedDouble, DollarSign, MessageSquare, Wrench, Calendar, 
-  Search, Plus, Menu, CheckCircle2, AlertCircle, ArrowUpRight, TrendingUp, UserCheck
+  Search, Plus, Menu, CheckCircle2, AlertCircle, ArrowUpRight, TrendingUp, UserCheck,
+  Check, X, Eye, Phone, Mail, ClipboardList
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -18,6 +19,29 @@ export const OwnerDashboardPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [processingBookingId, setProcessingBookingId] = useState<string | null>(null);
+  const [selectedBookingForDetails, setSelectedBookingForDetails] = useState<any | null>(null);
+  const [actionSuccessMsg, setActionSuccessMsg] = useState<string | null>(null);
+
+  const handleUpdateBookingStatus = async (bookingId: string, newStatus: 'APPROVED' | 'REJECTED') => {
+    try {
+      setProcessingBookingId(bookingId);
+      const updated = await apiFetch<any>(`/bookings/${bookingId}/status`, {
+        method: 'PATCH',
+        body: JSON.stringify({ status: newStatus })
+      });
+      setRecentBookings(prev => prev.map(b => (b.id === bookingId ? { ...b, ...updated, status: newStatus } : b)));
+      if (selectedBookingForDetails?.id === bookingId) {
+        setSelectedBookingForDetails((prev: any) => prev ? { ...prev, ...updated, status: newStatus } : null);
+      }
+      setActionSuccessMsg(`Booking successfully ${newStatus === 'APPROVED' ? 'confirmed & approved' : 'declined'}.`);
+      setTimeout(() => setActionSuccessMsg(null), 3500);
+    } catch (e: any) {
+      alert(e.message || 'Failed updating booking status');
+    } finally {
+      setProcessingBookingId(null);
+    }
+  };
 
   useEffect(() => {
     const loadOwnerData = async () => {
@@ -278,22 +302,32 @@ export const OwnerDashboardPage: React.FC = () => {
           <div className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 shadow-2xs">
             <div className="flex items-center justify-between mb-4">
               <div>
-                <h3 className="font-bold text-slate-900 text-sm sm:text-base">Recent Booking Requests</h3>
-                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">Manage new tenant move-in applications.</p>
+                <h3 className="font-bold text-slate-900 text-sm sm:text-base flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-brand-600" /> Recent Booking Requests
+                </h3>
+                <p className="text-[11px] text-slate-400 font-semibold mt-0.5">Manage and confirm tenant move-in applications.</p>
               </div>
-              <Link to="/owner/properties" className="text-xs font-bold text-brand-600 hover:underline">
-                Manage Properties →
+              <Link to="/owner/bookings" className="text-xs font-bold text-brand-600 hover:underline flex items-center gap-1">
+                View All Bookings ({recentBookings.length}) →
               </Link>
             </div>
 
+            {actionSuccessMsg && (
+              <div className="mb-3 p-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                <span>{actionSuccessMsg}</span>
+              </div>
+            )}
+
             <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-600 min-w-[500px]">
+              <table className="w-full text-left text-xs text-slate-600 min-w-[540px]">
                 <thead className="bg-slate-50 text-slate-400 font-bold uppercase tracking-wider text-[10px] border-b border-slate-100">
                   <tr>
                     <th className="py-3 px-3">Tenant Name</th>
-                    <th className="py-3 px-3">Property</th>
-                    <th className="py-3 px-3">Proposed Move-In</th>
+                    <th className="py-3 px-3">Property & Room</th>
+                    <th className="py-3 px-3">Move-In</th>
                     <th className="py-3 px-3">Status</th>
+                    <th className="py-3 px-3 text-right">Quick Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100 font-semibold">
@@ -302,14 +336,20 @@ export const OwnerDashboardPage: React.FC = () => {
                       <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
                         <td className="py-3 px-3">
                           <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs">
+                            <div className="w-7 h-7 rounded-full bg-brand-100 text-brand-700 font-bold flex items-center justify-center text-xs shrink-0">
                               {(b.seeker_name || 'T').charAt(0)}
                             </div>
-                            <span className="font-bold text-slate-900">{b.seeker_name || 'Tenant'}</span>
+                            <div>
+                              <span className="font-bold text-slate-900 block leading-tight">{b.seeker_name || 'Tenant'}</span>
+                              {b.seeker_phone && <span className="text-[10px] text-slate-400 font-normal">{b.seeker_phone}</span>}
+                            </div>
                           </div>
                         </td>
-                        <td className="py-3 px-3 font-semibold text-slate-800">{b.property_name || 'HMS Stay'}</td>
-                        <td className="py-3 px-3 text-slate-600">{b.move_in_date || 'TBD'}</td>
+                        <td className="py-3 px-3 font-semibold text-slate-800">
+                          <div>{b.property_name || 'HMS Stay'}</div>
+                          {b.room_number && <div className="text-[10px] text-slate-400 font-normal">Rm #{b.room_number}</div>}
+                        </td>
+                        <td className="py-3 px-3 text-slate-600">{b.move_in_date || 'Immediate'}</td>
                         <td className="py-3 px-3">
                           <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold ${
                             b.status === 'APPROVED'
@@ -321,11 +361,47 @@ export const OwnerDashboardPage: React.FC = () => {
                             {b.status}
                           </span>
                         </td>
+                        <td className="py-3 px-3 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
+                            <button
+                              onClick={() => setSelectedBookingForDetails(b)}
+                              className="p-1.5 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-colors cursor-pointer"
+                              title="View Details"
+                            >
+                              <Eye className="w-3.5 h-3.5" />
+                            </button>
+                            {b.status === 'PENDING' && (
+                              <>
+                                <button
+                                  onClick={() => handleUpdateBookingStatus(b.id, 'APPROVED')}
+                                  disabled={processingBookingId === b.id}
+                                  className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-[10px] rounded-lg shadow-2xs flex items-center gap-1 transition-all cursor-pointer"
+                                  title="Confirm & Approve Booking"
+                                >
+                                  <Check className="w-3 h-3" />
+                                  <span>Confirm</span>
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    if (confirm('Decline this booking application?')) {
+                                      handleUpdateBookingStatus(b.id, 'REJECTED');
+                                    }
+                                  }}
+                                  disabled={processingBookingId === b.id}
+                                  className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                  title="Decline"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </>
+                            )}
+                          </div>
+                        </td>
                       </tr>
                     ))
                   ) : (
                     <tr>
-                      <td colSpan={4} className="py-10 text-center text-xs text-slate-400 font-semibold">
+                      <td colSpan={5} className="py-10 text-center text-xs text-slate-400 font-semibold">
                         No recent booking requests for your properties.
                       </td>
                     </tr>
@@ -363,6 +439,148 @@ export const OwnerDashboardPage: React.FC = () => {
           </div>
 
         </div>
+
+        {/* Booking Inspection Modal */}
+        {selectedBookingForDetails && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in">
+            <div className="bg-white w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-slate-200 space-y-6 relative max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between pb-4 border-b border-slate-100">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-2xl bg-brand-600 text-white font-black flex items-center justify-center text-sm">
+                    {(selectedBookingForDetails.seeker_name || 'T').charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <h3 className="font-black text-slate-900 text-base">Booking Application Details</h3>
+                    <p className="text-xs text-slate-400 font-semibold">Reference ID: #{selectedBookingForDetails.id.slice(-6)}</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setSelectedBookingForDetails(null)}
+                  className="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold flex items-center justify-center text-sm cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+
+              {/* Status Banner */}
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-slate-50 border border-slate-100">
+                <span className="text-xs font-bold text-slate-500">Current Request Status:</span>
+                <span
+                  className={`px-3 py-1 rounded-full text-xs font-black uppercase tracking-wider ${
+                    selectedBookingForDetails.status === 'APPROVED'
+                      ? 'bg-emerald-100 text-emerald-800'
+                      : selectedBookingForDetails.status === 'PENDING'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-slate-100 text-slate-600'
+                  }`}
+                >
+                  {selectedBookingForDetails.status}
+                </span>
+              </div>
+
+              {/* Tenant Details */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Tenant Profile</h4>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Full Name</span>
+                    <span className="font-bold text-slate-900">{selectedBookingForDetails.seeker_name || 'N/A'}</span>
+                  </div>
+                  {selectedBookingForDetails.seeker_phone && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Phone Number</span>
+                      <a href={`tel:${selectedBookingForDetails.seeker_phone}`} className="font-bold text-brand-600 hover:underline">
+                        {selectedBookingForDetails.seeker_phone}
+                      </a>
+                    </div>
+                  )}
+                  {selectedBookingForDetails.seeker_email && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Email Address</span>
+                      <a href={`mailto:${selectedBookingForDetails.seeker_email}`} className="font-bold text-brand-600 hover:underline">
+                        {selectedBookingForDetails.seeker_email}
+                      </a>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Stay & Room Details */}
+              <div className="space-y-3">
+                <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Stay & Property Information</h4>
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Target Property</span>
+                    <span className="font-bold text-slate-900">{selectedBookingForDetails.property_name || 'HMS Stay'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Room Requested</span>
+                    <span className="font-bold text-slate-900">
+                      {selectedBookingForDetails.room_type || 'Standard'} {selectedBookingForDetails.room_number ? `#${selectedBookingForDetails.room_number}` : ''}
+                    </span>
+                  </div>
+                  {selectedBookingForDetails.room_price && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-slate-500">Monthly Rent</span>
+                      <span className="font-extrabold text-brand-700">₹{selectedBookingForDetails.room_price.toLocaleString()}/month</span>
+                    </div>
+                  )}
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Proposed Move-In Date</span>
+                    <span className="font-extrabold text-slate-900">{selectedBookingForDetails.move_in_date || 'Immediate'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Stay Duration</span>
+                    <span className="font-bold text-slate-900">{selectedBookingForDetails.stay_duration || '6 Months'}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Tenant Notes */}
+              {selectedBookingForDetails.notes && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-black text-slate-400 uppercase tracking-wider">Tenant Notes</h4>
+                  <div className="bg-slate-50 p-3.5 rounded-2xl border border-slate-100 text-xs text-slate-700 italic">
+                    "{selectedBookingForDetails.notes}"
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons in Modal */}
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+                <button
+                  onClick={() => setSelectedBookingForDetails(null)}
+                  className="px-4 py-2.5 rounded-xl text-xs font-bold text-slate-600 hover:bg-slate-100 cursor-pointer"
+                >
+                  Close
+                </button>
+
+                {selectedBookingForDetails.status === 'PENDING' && (
+                  <>
+                    <button
+                      onClick={() => {
+                        if (confirm('Decline this booking application?')) {
+                          handleUpdateBookingStatus(selectedBookingForDetails.id, 'REJECTED');
+                        }
+                      }}
+                      disabled={Boolean(processingBookingId)}
+                      className="px-4 py-2.5 rounded-xl text-xs font-bold text-red-600 hover:bg-red-50 border border-red-200 cursor-pointer"
+                    >
+                      Decline
+                    </button>
+                    <button
+                      onClick={() => handleUpdateBookingStatus(selectedBookingForDetails.id, 'APPROVED')}
+                      disabled={Boolean(processingBookingId)}
+                      className="px-5 py-2.5 rounded-xl text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-700 shadow-md cursor-pointer"
+                    >
+                      {processingBookingId ? 'Confirming...' : 'Confirm & Approve Booking'}
+                    </button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </main>
     </div>
   );

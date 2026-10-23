@@ -5,7 +5,7 @@ import { Footer } from '../components/ui/Footer';
 import { Property, Room } from '../types';
 import { apiFetch } from '../lib/api';
 import { useAuthStore } from '../stores/authStore';
-import { CheckCircle2, Star, MapPin, Users, ShieldCheck, Wifi, Utensils, Shirt, Sparkles, Calendar, MessageSquare, ArrowRight } from 'lucide-react';
+import { CheckCircle2, Star, MapPin, Users, ShieldCheck, Wifi, Utensils, Shirt, Sparkles, Calendar, MessageSquare, ArrowRight, Building2, BedDouble, ClipboardList } from 'lucide-react';
 
 export const PropertyDetailsPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
@@ -137,14 +137,37 @@ export const PropertyDetailsPage: React.FC = () => {
     "https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?auto=format&fit=crop&w=800&q=80"
   ];
 
+  const isOwner = Boolean(
+    user && property && (user.id === property.owner_id || user.role === 'OWNER' || user.role === 'ADMIN')
+  );
+
+  const hostName = property?.owner_name || 'Property Host';
+  const hostInitials = (property?.owner_name || 'Host')
+    .split(' ')
+    .filter(Boolean)
+    .map(n => n[0])
+    .join('')
+    .slice(0, 2)
+    .toUpperCase() || 'H';
+
+  const handleBack = () => {
+    if (isOwner) {
+      navigate('/owner/properties');
+    } else if (window.history.length > 2) {
+      navigate(-1);
+    } else {
+      navigate('/explore');
+    }
+  };
+
   return (
     <div className="min-h-screen flex flex-col bg-slate-50 pb-20 lg:pb-0">
       <Navbar />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1">
         {/* Back Link */}
-        <button onClick={() => navigate(-1)} className="text-xs font-bold text-slate-500 hover:text-slate-900 mb-4 flex items-center gap-1">
-          ← Back to properties
+        <button onClick={handleBack} className="text-xs font-bold text-slate-500 hover:text-slate-900 mb-4 flex items-center gap-1 cursor-pointer">
+          {isOwner ? '← Back to Owner Properties' : '← Back to properties'}
         </button>
 
         {/* Responsive Gallery Grid */}
@@ -273,31 +296,96 @@ export const PropertyDetailsPage: React.FC = () => {
               <div className="bg-white p-5 sm:p-6 rounded-2xl border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <div className="flex items-center gap-3.5">
                   <div className="w-11 h-11 rounded-2xl bg-brand-600 text-white font-bold flex items-center justify-center text-base shadow-sm">
-                    RS
+                    {hostInitials}
                   </div>
                   <div>
-                    <h4 className="font-bold text-slate-900 text-sm sm:text-base">Rahul Sharma</h4>
+                    <h4 className="font-bold text-slate-900 text-sm sm:text-base">{hostName}</h4>
                     <p className="text-xs text-slate-500">Verified Property Host • HMS Managed</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => {
-                    if (!user) {
-                      navigate('/login');
-                    } else {
-                      setIsContactModalOpen(true);
-                    }
-                  }}
-                  className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 hover:border-brand-500 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
-                >
-                  <MessageSquare className="w-4 h-4 text-brand-600" /> Contact Host
-                </button>
+                {!isOwner && (
+                  <button
+                    onClick={() => {
+                      if (!user) {
+                        navigate('/login');
+                      } else {
+                        setIsContactModalOpen(true);
+                      }
+                    }}
+                    className="w-full sm:w-auto px-4 py-2.5 border border-slate-200 hover:border-brand-500 text-slate-700 hover:bg-slate-50 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <MessageSquare className="w-4 h-4 text-brand-600" /> Contact Host
+                  </button>
+                )}
               </div>
             </div>
           </div>
 
-          {/* Sticky Booking Form Side Card (Desktop & Tablet) */}
+          {/* Sticky Side Card (Desktop & Tablet) */}
           <div className="lg:col-span-1" id="booking-card">
+            {isOwner ? (
+              <div className="bg-white p-6 rounded-3xl border-2 border-brand-500/30 shadow-lg sticky top-24 space-y-6">
+                <div className="flex items-center gap-2.5 pb-4 border-b border-slate-100">
+                  <div className="w-10 h-10 rounded-2xl bg-brand-50 text-brand-700 font-bold flex items-center justify-center text-sm">
+                    <Building2 className="w-5 h-5 text-brand-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-extrabold text-slate-900 text-sm">Owner Listing Preview</h3>
+                    <p className="text-[11px] text-slate-400 font-semibold">You own & manage this stay</p>
+                  </div>
+                </div>
+
+                <div className="bg-slate-50 p-4 rounded-2xl border border-slate-100 space-y-2.5 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Listing Status</span>
+                    <span className="font-extrabold text-emerald-600 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200 text-[11px]">
+                      {property.property_status || 'Published'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Verification</span>
+                    <span className="font-bold text-slate-800">{property.verification_status || 'Verified'}</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Total Profile Views</span>
+                    <span className="font-bold text-slate-800">{property.views || 0} views</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Rooms Listed</span>
+                    <span className="font-bold text-slate-800">{rooms.length} rooms</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-500">Deposit Amount</span>
+                    <span className="font-extrabold text-slate-900">₹{property.deposit?.toLocaleString()}</span>
+                  </div>
+                </div>
+
+                <div className="space-y-2.5 pt-2">
+                  <button
+                    onClick={() => navigate('/owner/bookings')}
+                    className="w-full py-3 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+                  >
+                    <ClipboardList className="w-4 h-4" />
+                    <span>View Booking Requests</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/owner/rooms')}
+                    className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <BedDouble className="w-4 h-4 text-slate-600" />
+                    <span>Manage Rooms & Beds</span>
+                  </button>
+
+                  <button
+                    onClick={() => navigate('/owner/properties')}
+                    className="w-full py-2.5 border border-slate-200 hover:bg-slate-50 text-slate-600 font-bold text-xs rounded-xl flex items-center justify-center gap-2 transition-colors cursor-pointer"
+                  >
+                    <span>← Back to Properties Section</span>
+                  </button>
+                </div>
+              </div>
+            ) : (
             <div className="bg-white p-6 rounded-3xl border border-slate-200 shadow-lg sticky top-24 space-y-6">
               <div>
                 <span className="text-[11px] font-bold text-slate-400 block uppercase tracking-wider mb-1">Starting Monthly Rent</span>
@@ -390,6 +478,7 @@ export const PropertyDetailsPage: React.FC = () => {
                 </form>
               )}
             </div>
+            )}
           </div>
         </div>
       </main>
@@ -401,11 +490,11 @@ export const PropertyDetailsPage: React.FC = () => {
             <div className="flex items-center justify-between pb-4 border-b border-slate-100 mb-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-xl bg-brand-600 text-white font-bold flex items-center justify-center text-sm">
-                  RS
+                  {hostInitials}
                 </div>
                 <div>
                   <h3 className="font-extrabold text-slate-900 text-sm sm:text-base">Contact Host</h3>
-                  <p className="text-xs text-slate-500">{property.name}</p>
+                  <p className="text-xs text-slate-500">{property.name} • {hostName}</p>
                 </div>
               </div>
               <button
@@ -429,7 +518,7 @@ export const PropertyDetailsPage: React.FC = () => {
                   <textarea
                     rows={4}
                     required
-                    placeholder="Hi Rahul, I am interested in booking a stay at your property. Could you please provide more details regarding room availability and move-in process?"
+                    placeholder={`Hi ${hostName}, I am interested in booking a stay at your property. Could you please provide more details regarding room availability and move-in process?`}
                     value={enquiryMsg}
                     onChange={(e) => setEnquiryMsg(e.target.value)}
                     className="w-full bg-slate-50 border border-slate-200 rounded-xl p-3 text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
@@ -460,23 +549,41 @@ export const PropertyDetailsPage: React.FC = () => {
 
       {/* Floating Sticky Mobile Booking Bar */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 p-3.5 bg-white border-t border-slate-200 z-40 flex items-center justify-between shadow-2xl">
-        <div>
-          <span className="text-[10px] text-slate-400 font-bold uppercase block">Starting at</span>
-          <span className="text-lg font-black text-slate-900">
-            ₹{selectedRoom ? selectedRoom.price.toLocaleString() : property.deposit.toLocaleString()}
-            <span className="text-xs font-normal text-slate-500">/mo</span>
-          </span>
-        </div>
-        <button
-          onClick={() => {
-            const card = document.getElementById('booking-card');
-            card?.scrollIntoView({ behavior: 'smooth' });
-          }}
-          className="px-5 py-2.5 bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
-        >
-          <span>Book Stay</span>
-          <ArrowRight className="w-4 h-4" />
-        </button>
+        {isOwner ? (
+          <div className="w-full flex items-center justify-between gap-3">
+            <div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Owner Mode</span>
+              <span className="text-xs font-extrabold text-slate-900 line-clamp-1">{property.name}</span>
+            </div>
+            <button
+              onClick={() => navigate('/owner/properties')}
+              className="px-4 py-2 bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0"
+            >
+              <span>Back to Properties</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div>
+              <span className="text-[10px] text-slate-400 font-bold uppercase block">Starting at</span>
+              <span className="text-lg font-black text-slate-900">
+                ₹{selectedRoom ? selectedRoom.price.toLocaleString() : property.deposit.toLocaleString()}
+                <span className="text-xs font-normal text-slate-500">/mo</span>
+              </span>
+            </div>
+            <button
+              onClick={() => {
+                const card = document.getElementById('booking-card');
+                card?.scrollIntoView({ behavior: 'smooth' });
+              }}
+              className="px-5 py-2.5 bg-brand-600 text-white font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5"
+            >
+              <span>Book Stay</span>
+              <ArrowRight className="w-4 h-4" />
+            </button>
+          </>
+        )}
       </div>
 
       <Footer />

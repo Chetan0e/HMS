@@ -14,6 +14,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { SeekerDashboardPage } from './pages/SeekerDashboardPage';
 import { OwnerDashboardPage } from './pages/OwnerDashboardPage';
 import { OwnerPropertiesPage } from './pages/OwnerPropertiesPage';
+import { OwnerBookingsPage } from './pages/OwnerBookingsPage';
 import { OwnerRoomsPage } from './pages/OwnerRoomsPage';
 import { OwnerResidentsPage } from './pages/OwnerResidentsPage';
 import { OwnerPaymentsPage } from './pages/OwnerPaymentsPage';
@@ -22,6 +23,7 @@ import { OwnerAnalyticsPage } from './pages/OwnerAnalyticsPage';
 import { OwnerSettingsPage } from './pages/OwnerSettingsPage';
 import { AddPropertyPage } from './pages/AddPropertyPage';
 import { AdminDashboardPage } from './pages/AdminDashboardPage';
+import { MobileBottomNav } from './components/ui/MobileBottomNav';
 
 const queryClient = new QueryClient();
 
@@ -53,6 +55,7 @@ export const App: React.FC = () => {
           <Route path="/owner" element={<OwnerDashboardPage />} />
           <Route path="/owner/properties" element={<OwnerPropertiesPage />} />
           <Route path="/owner/properties/new" element={<AddPropertyPage />} />
+          <Route path="/owner/bookings" element={<OwnerBookingsPage />} />
           <Route path="/owner/rooms" element={<OwnerRoomsPage />} />
           <Route path="/owner/residents" element={<OwnerResidentsPage />} />
           <Route path="/owner/payments" element={<OwnerPaymentsPage />} />
@@ -68,6 +71,7 @@ export const App: React.FC = () => {
           {/* Fallback */}
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        <MobileBottomNav />
       </BrowserRouter>
     </QueryClientProvider>
   );

@@ -112,6 +112,15 @@ async def get_property_by_slug_or_id(slug_or_id: str):
     rooms = await rooms_cursor.to_list(100)
     prices = [r.get("price", 0) for r in rooms if "price" in r]
     prop["pricing_starting_from"] = min(prices) if prices else 0.0
+
+    # Attach owner contact details
+    owner_id_val = prop.get("owner_id")
+    if owner_id_val and ObjectId.is_valid(owner_id_val):
+        owner = await db.users.find_one({"_id": ObjectId(owner_id_val)})
+        if owner:
+            prop["owner_name"] = owner.get("name")
+            prop["owner_phone"] = owner.get("phone")
+            prop["owner_email"] = owner.get("email")
     
     return prop
 

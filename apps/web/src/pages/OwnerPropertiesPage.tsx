@@ -266,7 +266,6 @@ export const OwnerPropertiesPage: React.FC = () => {
 
                   <Link
                     to={`/property/${prop.slug}`}
-                    target="_blank"
                     className="p-2 text-slate-600 hover:text-brand-600 hover:bg-slate-200/60 rounded-xl transition-colors"
                     title="Preview Stay Page"
                   >

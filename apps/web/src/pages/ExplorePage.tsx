@@ -197,9 +197,9 @@ export const ExplorePage: React.FC = () => {
       <Navbar />
 
       {/* Top Search Subheader */}
-      <div className="bg-white border-b border-slate-200 py-3.5 px-4 sm:px-6 lg:px-8 sticky top-16 z-40 shadow-2xs">
-        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
-          <form onSubmit={handleFilterSubmit} className="flex items-center gap-2.5 w-full sm:w-auto flex-1 max-w-xl">
+      <div className="bg-white border-b border-slate-200 py-2.5 sm:py-3.5 px-3.5 sm:px-6 lg:px-8 sticky top-14 md:top-16 z-30 shadow-2xs">
+        <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2.5 sm:gap-3">
+          <form onSubmit={handleFilterSubmit} className="flex items-center gap-2 w-full sm:w-auto flex-1 max-w-xl">
             <div className="relative w-full flex items-center">
               <button
                 type="button"
@@ -210,7 +210,7 @@ export const ExplorePage: React.FC = () => {
                 {isLocating ? (
                   <Loader2 className="w-4 h-4 animate-spin text-brand-600" />
                 ) : (
-                  <LocateFixed className="w-4 h-4 text-brand-600 group-hover/pin:scale-110 transition-transform" />
+                  <LocateFixed className="w-4 h-4 text-brand-600 group-hover:scale-110 transition-transform" />
                 )}
               </button>
               <input
@@ -218,7 +218,7 @@ export const ExplorePage: React.FC = () => {
                 placeholder="Search location, college, landmark..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="w-full bg-slate-100 pl-10 pr-16 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
+                className="w-full bg-slate-100 pl-10 pr-16 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold border border-slate-200 focus:outline-none focus:ring-2 focus:ring-brand-500/20"
               />
               <button
                 type="button"
@@ -230,24 +230,24 @@ export const ExplorePage: React.FC = () => {
             </div>
             <button
               type="submit"
-              className="px-4 py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl transition-all shrink-0 cursor-pointer"
+              className="px-3.5 sm:px-4 py-2 sm:py-2.5 bg-brand-600 hover:bg-brand-700 text-white font-bold text-xs rounded-xl transition-all shrink-0 cursor-pointer"
             >
               Search
             </button>
           </form>
 
           {/* Sort Selector & Mobile Filter Button */}
-          <div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto justify-between sm:justify-end">
             <button
               onClick={() => setMobileFilterOpen(true)}
-              className="lg:hidden flex items-center gap-1.5 px-3 py-2 bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-200"
+              className="lg:hidden flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 text-slate-800 text-xs font-bold rounded-xl border border-slate-200"
             >
               <Filter className="w-3.5 h-3.5 text-brand-600" />
               <span>Filters</span>
             </button>
 
             <span className="text-xs text-slate-500 font-medium whitespace-nowrap">
-              {properties.length} stays
+              {properties.length} stays found
             </span>
 
             <div className="flex items-center gap-1.5">
@@ -255,7 +255,7 @@ export const ExplorePage: React.FC = () => {
               <select
                 value={sort}
                 onChange={(e) => setSort(e.target.value)}
-                className="bg-white border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-3 py-2 focus:outline-none cursor-pointer"
+                className="bg-white border border-slate-200 text-slate-800 text-xs font-bold rounded-xl px-2.5 py-1.5 focus:outline-none cursor-pointer"
               >
                 <option value="recommended">Recommended</option>
                 <option value="price_asc">Price: Low to High</option>
@@ -265,10 +265,74 @@ export const ExplorePage: React.FC = () => {
             </div>
           </div>
         </div>
+
+        {/* Mobile Quick-Filter Pills Strip */}
+        <div className="flex lg:hidden items-center gap-1.5 overflow-x-auto pt-2 pb-0.5 scrollbar-none no-scrollbar -mx-1 px-1">
+          <button
+            onClick={() => { setGenderPolicy('All'); setPropertyType('All'); }}
+            className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              genderPolicy === 'All' && propertyType === 'All'
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            All
+          </button>
+          <button
+            onClick={() => setGenderPolicy(genderPolicy === 'Boys' ? 'All' : 'Boys')}
+            className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              genderPolicy === 'Boys'
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            Boys PG
+          </button>
+          <button
+            onClick={() => setGenderPolicy(genderPolicy === 'Girls' ? 'All' : 'Girls')}
+            className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              genderPolicy === 'Girls'
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            Girls PG
+          </button>
+          <button
+            onClick={() => toggleAmenity('Food Included')}
+            className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              selectedAmenities.includes('Food Included')
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            Food Included
+          </button>
+          <button
+            onClick={() => toggleAmenity('AC')}
+            className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              selectedAmenities.includes('AC')
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            AC
+          </button>
+          <button
+            onClick={() => toggleAmenity('WiFi')}
+            className={`px-3 py-1 rounded-full text-xs font-bold whitespace-nowrap transition-colors ${
+              selectedAmenities.includes('WiFi')
+                ? 'bg-brand-600 text-white'
+                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            WiFi
+          </button>
+        </div>
       </div>
 
       {/* Main Explore Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 w-full flex-1">
+      <main className="max-w-7xl mx-auto px-3.5 sm:px-6 lg:px-8 py-5 pb-28 md:py-8 w-full flex-1">
         <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
           
           {/* Desktop Left Sidebar Filters */}
@@ -321,19 +385,25 @@ export const ExplorePage: React.FC = () => {
         </div>
       </main>
 
-      {/* Mobile Filter Slide-over Drawer */}
+      {/* Mobile Filter Slide-up Bottom Sheet */}
       {mobileFilterOpen && (
-        <div className="fixed inset-0 z-50 flex justify-end bg-black/50 backdrop-blur-xs lg:hidden">
-          <div className="w-full max-w-xs sm:max-w-sm bg-white h-full p-6 overflow-y-auto shadow-2xl flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between pb-4 mb-4 border-b border-slate-200">
-                <h3 className="font-extrabold text-slate-900 text-lg">Filter Stays</h3>
-                <button onClick={() => setMobileFilterOpen(false)} className="p-1 text-slate-400 hover:text-slate-700">
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-              {renderFilterContent()}
+        <div className="fixed inset-0 z-50 flex flex-col justify-end lg:hidden animate-in fade-in duration-200">
+          <div 
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs" 
+            onClick={() => setMobileFilterOpen(false)} 
+          />
+          <div className="relative bg-white rounded-t-[2rem] p-6 max-h-[85vh] overflow-y-auto shadow-2xl border-t border-slate-100 flex flex-col animate-in slide-in-from-bottom duration-300">
+            <div className="w-12 h-1.5 bg-slate-300 rounded-full mx-auto mb-4 shrink-0" />
+            <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+              <h3 className="font-extrabold text-slate-900 text-base">Filter Stays</h3>
+              <button 
+                onClick={() => setMobileFilterOpen(false)} 
+                className="w-8 h-8 rounded-full bg-slate-100 text-slate-500 hover:text-slate-800 flex items-center justify-center"
+              >
+                <X className="w-4 h-4" />
+              </button>
             </div>
+            {renderFilterContent()}
           </div>
         </div>
       )}
